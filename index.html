@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Ejecutivo — Sanatorio Mater Dei</title>
+  <style>
+    /* ── Tokens ───────────────────────────────────────────── */
+    :root {
+      --navy:     #0B2A52;
+      --teal:     #2ABFBF;
+      --bg:       #EEF2F7;
+      --surface:  #FFFFFF;
+      --border:   #D0D8E4;
+      --text:     #0B2A52;
+      --text-2:   #5A6A80;
+      --text-3:   #8A9AB2;
+      --sidebar-w: 216px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:      #080F1C;
+        --surface: #0E1F3A;
+        --border:  #1A3055;
+        --text:    #D8E4F4;
+        --text-2:  #7A94B8;
+        --text-3:  #4A6080;
+      }
+    }
+    :root[data-theme="light"] {
+      --bg:      #EEF2F7;
+      --surface: #FFFFFF;
+      --border:  #D0D8E4;
+      --text:    #0B2A52;
+      --text-2:  #5A6A80;
+      --text-3:  #8A9AB2;
+    }
+    :root[data-theme="dark"] {
+      --bg:      #080F1C;
+      --surface: #0E1F3A;
+      --border:  #1A3055;
+      --text:    #D8E4F4;
+      --text-2:  #7A94B8;
+      --text-3:  #4A6080;
+    }
+
+    /* ── Reset ────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--navy);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 10;
+    }
+    .sidebar-logo {
+      padding: 1.5rem 1.25rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .logo-eyebrow {
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.4);
+      margin-bottom: .3rem;
+    }
+    .logo-name {
+      font-size: .98rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .logo-label {
+      font-size: .68rem;
+      color: var(--teal);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-top: .25rem;
+    }
+
+    nav { flex: 1; padding: .5rem 0; overflow-y: auto; }
+
+    .nav-group-label {
+      font-size: .62rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.28);
+      padding: 1rem 1.25rem .35rem;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      padding: .55rem 1.25rem;
+      font-size: .84rem;
+      color: rgba(255,255,255,.55);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: color .12s, background .12s;
+      cursor: pointer;
+    }
+    .nav-item:hover { color: rgba(255,255,255,.85); background: rgba(255,255,255,.05); }
+    .nav-item.active {
+      color: #fff;
+      border-left-color: var(--teal);
+      background: rgba(42,191,191,.1);
+    }
+    .nav-icon { width: 15px; height: 15px; flex-shrink: 0; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .sidebar-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,.07);
+      font-size: .68rem;
+      color: rgba(255,255,255,.25);
+      line-height: 1.6;
+    }
+
+    /* ── Main ─────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    .topbar-title { font-size: .92rem; font-weight: 600; color: var(--text); }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      font-size: .75rem;
+      color: var(--text-2);
+    }
+    .topbar-date { font-variant-numeric: tabular-nums; }
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: #fff;
+      font-size: .68rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .content { padding: 2rem; flex: 1; }
+
+    .page-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    .page-header h1 { font-size: 1.2rem; font-weight: 700; }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .72rem;
+      color: var(--text-3);
+    }
+    .pulse {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #36C26E;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .35; }
+    }
+    @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
+    /* ── KPI grid ─────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1.1rem 1.2rem 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--border);
+    }
+    .kpi-card.hi::after { background: var(--teal); }
+    .kpi-label {
+      font-size: .63rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-bottom: .5rem;
+    }
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: .35rem;
+    }
+    .kpi-card.hi .kpi-value { color: var(--teal); }
+    .kpi-sub { font-size: .7rem; color: var(--text-2); }
+    .up { color: #28A05A; font-weight: 600; }
+    .dn { color: #C03030; font-weight: 600; }
+
+    /* ── Section grid ─────────────────────────────────────── */
+    .section-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 1rem;
+    }
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .8rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-label {
+      font-size: .63rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+    .section-link { font-size: .72rem; color: var(--teal); text-decoration: none; }
+    .section-link:hover { text-decoration: underline; }
+
+    /* ── Table ────────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: .81rem; }
+    .data-table th {
+      text-align: left;
+      padding: .6rem 1.2rem;
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: .68rem 1.2rem;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background: rgba(42,191,191,.04); }
+
+    .badge {
+      display: inline-block;
+      padding: .18rem .5rem;
+      border-radius: 3px;
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .ok   { background: rgba(40,160,90,.1);  color: #28A05A; }
+    .warn { background: rgba(210,130,20,.1); color: #B87010; }
+    .crit { background: rgba(192,48,48,.1);  color: #C03030; }
+
+    /* ── Activity list ────────────────────────────────────── */
+    .activity-item {
+      display: flex;
+      gap: .85rem;
+      padding: .8rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-top: .35rem;
+      flex-shrink: 0;
+    }
+    .dot-teal  { background: var(--teal); }
+    .dot-navy  { background: var(--navy); opacity: .5; }
+    .dot-amber { background: #D4820E; }
+    .activity-text { flex: 1; font-size: .79rem; color: var(--text); line-height: 1.45; }
+    .activity-text strong { font-weight: 600; }
+    .activity-time { font-size: .67rem; color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+    /* ── Floating bubble ──────────────────────────────────── */
+    #chat-bubble {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--teal);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(42,191,191,.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform .15s ease, box-shadow .15s ease;
+      z-index: 100;
+    }
+    #chat-bubble:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(42,191,191,.6); }
+    #chat-bubble:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+    #chat-bubble svg { width: 22px; height: 22px; fill: #fff; }
+
+    /* ── Chat panel ───────────────────────────────────────── */
+    #chat-panel {
+      position: fixed;
+      bottom: 86px; right: 24px;
+      width: 372px; height: 572px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 16px 56px rgba(0,0,0,.22);
+      border: 1px solid var(--border);
+      z-index: 99;
+      display: none;
+      flex-direction: column;
+      background: var(--surface);
+      transform-origin: bottom right;
+    }
+    #chat-panel.open {
+      display: flex;
+      animation: panelIn .18s ease;
+    }
+    @keyframes panelIn {
+      from { opacity: 0; transform: scale(.96) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) { #chat-panel.open { animation: none; } }
+
+    .panel-header {
+      background: var(--teal);
+      color: #fff;
+      padding: .75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      flex-shrink: 0;
+    }
+    .panel-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .panel-icon svg { width: 16px; height: 16px; stroke: #fff; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .panel-info { flex: 1; }
+    .panel-info strong { display: block; font-size: .86rem; font-weight: 700; }
+    .panel-info span   { font-size: .69rem; opacity: .8; }
+    .panel-close {
+      background: none; border: none; color: rgba(255,255,255,.75);
+      cursor: pointer; padding: .25rem;
+      border-radius: 4px;
+      display: flex; align-items: center;
+      transition: color .1s, background .1s;
+    }
+    .panel-close:hover { color: #fff; background: rgba(255,255,255,.15); }
+    .panel-close:focus-visible { outline: 2px solid rgba(255,255,255,.5); outline-offset: 2px; }
+    .panel-close svg { width: 16px; height: 16px; stroke: currentColor; fill: none;
+      stroke-width: 2.5; stroke-linecap: round; }
+
+    #chat-panel iframe { flex: 1; border: none; width: 100%; }
+
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .section-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      #chat-panel { width: calc(100vw - 16px); right: 8px; height: 520px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" aria-label="Navegación principal">
+    <div class="sidebar-logo">
+      <div class="logo-eyebrow">Sanatorio Mater Dei</div>
+      <div class="logo-name">Portal Ejecutivo</div>
+      <div class="logo-label">Dirección General</div>
+    </div>
+
+    <nav aria-label="Menú">
+      <div class="nav-group-label">Operaciones</div>
+
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Tablero
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Indicadores
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reportes
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Facturación
+      </a>
+
+      <div class="nav-group-label">Gestión</div>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Recursos Humanos
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        Configuración
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div>Portal Ejecutivo v1.0</div>
+      <div>© 2026 Sanatorio Mater Dei</div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar-title">Tablero operativo</span>
+      <div class="topbar-right">
+        <span class="topbar-date" id="js-date"></span>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <div class="avatar">DG</div>
+          <span>Dirección General</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-header">
+        <h1>Resumen del día</h1>
+        <div class="live-badge">
+          <span class="pulse"></span>
+          Actualizado hace 4 min
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card hi">
+          <div class="kpi-label">Ocupación general</div>
+          <div class="kpi-value">87%</div>
+          <div class="kpi-sub"><span class="up">↑ 3 pp</span> vs. semana anterior</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Internados</div>
+          <div class="kpi-value">214</div>
+          <div class="kpi-sub">Capacidad total: 246 camas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Ingresos hoy</div>
+          <div class="kpi-value">38</div>
+          <div class="kpi-sub"><span class="dn">↓ 5</span> vs. ayer</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Cirugías programadas</div>
+          <div class="kpi-value">12</div>
+          <div class="kpi-sub">3 adicionales en guardia</div>
+        </div>
+      </div>
+
+      <!-- Sections -->
+      <div class="section-grid">
+        <div class="section-card">
+          <div class="section-head">
+            <span class="section-label">Estado por servicio</span>
+            <a href="#" class="section-link">Ver completo →</a>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Servicio</th>
+                  <th>Camas</th>
+                  <th>Ocupadas</th>
+                  <th>En guardia</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Clínica médica</td><td>80</td><td>74</td><td>3</td><td><span class="badge warn">Alerta</span></td></tr>
+                <tr><td>Cardiología</td><td>30</td><td>22</td><td>1</td><td><span class="badge ok">Normal</span></td></tr>
+                <tr><td>Pediatría</td><td>40</td><td>28</td><td>2</td><td><span class="badge ok">Normal</span></td></tr>
+                <tr><td>UTI</td><td>16</td><td>15</td><td>—</td><td><span class="badge crit">Crítico</span></td></tr>
+                <tr><td>Obstetricia</td><td>28</td><td>19</td><td>1</td><td><span class="badge ok">Normal</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-head">
+            <span class="section-label">Actividad reciente</span>
+          </div>
+          <div>
+            <div class="activity-item">
+              <span class="dot dot-teal"></span>
+              <div class="activity-text"><strong>Guardia</strong> registró alta de 4 pacientes en las últimas 2 h</div>
+              <span class="activity-time">08:42</span>
+            </div>
+            <div class="activity-item">
+              <span class="dot dot-amber"></span>
+              <div class="activity-text">UTI sin disponibilidad — se activó <strong>protocolo de contingencia</strong></div>
+              <span class="activity-time">07:55</span>
+            </div>
+            <div class="activity-item">
+              <span class="dot dot-navy"></span>
+              <div class="activity-text">Turno de noche cerró con <strong>96 % de cobertura</strong> de puestos</div>
+              <span class="activity-time">06:00</span>
+            </div>
+            <div class="activity-item">
+              <span class="dot dot-teal"></span>
+              <div class="activity-text">Facturación procesó <strong>312 prestaciones</strong> del día anterior</div>
+              <span class="activity-time">05:30</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Floating bubble ── -->
+  <button id="chat-bubble" aria-label="Abrir asistente de RRHH" aria-expanded="false" title="Asistente de RRHH">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+  </button>
+
+  <!-- ── Chat panel ── -->
+  <div id="chat-panel" role="dialog" aria-modal="true" aria-label="Asistente de RRHH">
+    <div class="panel-header">
+      <div class="panel-icon">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <div class="panel-info">
+        <strong>Asistente de RRHH</strong>
+        <span>Sanatorio Mater Dei</span>
+      </div>
+      <button class="panel-close" id="chat-close" aria-label="Cerrar asistente">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <iframe
+      id="chat-iframe"
+      src=""
+      data-src="https://apps.sanatoriomaterdei.com.ar/portal_ia/widget/recursos-humanos"
+      title="Asistente de RRHH"
+      allow="microphone"
+    ></iframe>
+  </div>
+
+  <script>
+    // Fecha actual en la topbar
+    const d = new Date();
+    const label = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    document.getElementById('js-date').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+    // Bubble / panel toggle
+    const bubble = document.getElementById('chat-bubble');
+    const panel  = document.getElementById('chat-panel');
+    const close  = document.getElementById('chat-close');
+    const iframe = document.getElementById('chat-iframe');
+    let loaded   = false;
+
+    function openPanel() {
+      if (!loaded) { iframe.src = iframe.dataset.src; loaded = true; }
+      panel.classList.add('open');
+      bubble.setAttribute('aria-expanded', 'true');
+      close.focus();
+    }
+    function closePanel() {
+      panel.classList.remove('open');
+      bubble.setAttribute('aria-expanded', 'false');
+      bubble.focus();
+    }
+
+    bubble.addEventListener('click', openPanel);
+    close.addEventListener('click', closePanel);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+    });
+  </script>
+</body>
+</html>
