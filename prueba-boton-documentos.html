@@ -1,162 +1,119 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Botón — Documentos Institucionales</title>
 <!--
-  Botón que la intranet (Wix) va a ofrecer para entrar al agente de Documentos
-  Institucionales, más el diagnóstico que corre junto con él.
+  Botón "Documentos Institucionales" para la intranet.
 
-  UN SOLO BOTÓN: al hacer clic sondea el portal, deja el detalle en la consola
-  de abajo y según el resultado navega o abre el aviso. Los modos de prueba son
-  parámetros en la URL, no botones aparte.
+  Es un fragmento autónomo: se ve solo al abrirlo como página y se puede pegar
+  tal cual en Wix. Sin dependencias, sin build, todo namespaceado con smd-doc-.
 
-  Esta página vive en un origen público con HTTPS a propósito: la restricción de
-  Local Network Access de Chrome 142+ solo se dispara cuando la página que hace
-  la sonda está en un origen público y el destino resuelve a una IP privada, que
-  es lo que pasa con el portal desde la red interna (DNS split-brain, 10.1.1.15).
-  Desde localhost no se reproduce.
+  Al hacer clic sondea un recurso que el portal sirve únicamente a la red
+  interna. Si responde, navega al agente. Si no, muestra el aviso.
+
+  El aviso deja continuar a propósito: desde Chrome 142 una página pública que
+  pide un subrecurso a una IP privada cae bajo Local Network Access, y desde la
+  red del Sanatorio el portal resuelve a 10.1.1.15. O sea que la sonda puede
+  fallar para alguien que SÍ está adentro. Las navegaciones top-level están
+  exentas de esa restricción, así que "Intentar de todos modos" siempre funciona.
 -->
-<style>
-  :root { --dark:#14182b; --accent:#D97706; }
-  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; max-width:720px; margin:0 auto; padding:28px 20px 60px; line-height:1.55; color:#1f2937; }
-  body.embebido { padding:16px; }
-  h1 { font-size:20px; margin:0 0 6px; }
-  p.sub { color:#6b7280; font-size:14px; margin:0 0 20px; }
-  #smd-doc-btn { display:inline-flex; align-items:center; gap:8px; padding:12px 20px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; text-decoration:none; }
-  #smd-doc-btn:hover { filter:brightness(.94); }
-  #smd-doc-btn[aria-busy="true"] { opacity:.7; pointer-events:none; }
-  h2 { font-size:14px; margin:28px 0 8px; padding-top:14px; border-top:1px solid #e5e7eb; color:#374151; }
-  #log { background:#0f172a; color:#e2e8f0; font:12px/1.55 ui-monospace,Menlo,Consolas,monospace; padding:14px; border-radius:8px; white-space:pre-wrap; word-break:break-all; min-height:60px; }
-  ul.modos { font-size:14px; padding-left:18px; margin:0; } ul.modos li { margin:4px 0; }
-  iframe { width:100%; height:240px; border:1px solid #ddd; border-radius:8px; }
-</style>
-</head>
-<body>
-<div id="app"></div>
+<div id="smd-doc-root">
+  <style>
+    #smd-doc-root { --smd-accent:#D97706; --smd-dark:#14182b; font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+    #smd-doc-btn {
+      display:inline-flex; align-items:center; gap:8px; padding:12px 20px;
+      background:var(--smd-accent); color:#fff; border:none; border-radius:8px;
+      font-size:15px; font-weight:600; cursor:pointer; text-decoration:none;
+    }
+    #smd-doc-btn:hover { filter:brightness(.94); }
+    #smd-doc-btn[aria-busy="true"] { opacity:.7; pointer-events:none; }
 
-<script>
-(function () {
-  var PORTAL   = 'https://apps.sanatoriomaterdei.com.ar/portal_ia';
-  var AGENTE   = PORTAL + '/embed/documentos-institucionales';
-  var SONDA    = PORTAL + '/logo-materdei.png';   // interno: 200 adentro, 403 afuera
-  var EXPUESTO = PORTAL + '/favicon.png';         // en la allowlist: 200 en todos lados
-  var PIXEL    = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-  var ROTA     = './no-existe-a-proposito.png';
-  var TIMEOUT  = 3000;
+    #smd-doc-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.45);
+      display:none; align-items:center; justify-content:center; padding:20px; z-index:99999;
+    }
+    #smd-doc-overlay.smd-open { display:flex; }
+    #smd-doc-modal {
+      background:#fff; border-radius:14px; padding:28px; max-width:440px; width:100%;
+      box-shadow:0 12px 40px rgba(0,0,0,.3); text-align:center;
+    }
+    #smd-doc-modal h2 { margin:0 0 12px; font-size:17px; color:var(--smd-dark); }
+    #smd-doc-modal p  { margin:0 0 22px; font-size:14px; line-height:1.55; color:#4b5563; }
+    #smd-doc-actions  { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+    #smd-doc-actions button {
+      padding:10px 18px; border:none; border-radius:8px; font-size:14px; cursor:pointer;
+    }
+    #smd-doc-close    { background:var(--smd-dark); color:#fff; }
+    #smd-doc-continue { background:transparent; color:#6b7280; text-decoration:underline; }
+  </style>
 
-  var params   = new URLSearchParams(location.search);
-  var forzar   = params.get('forzar');                 // 'adentro' | 'afuera' | null
-  var vista    = params.get('vista');                  // 'iframe' | 'embebido' | null
-  var urlSonda = forzar === 'adentro' ? PIXEL : forzar === 'afuera' ? ROTA : SONDA;
+  <a id="smd-doc-btn" href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales" target="_top">
+    Documentos Institucionales
+  </a>
 
-  var app = document.getElementById('app');
-  var log, lineas = [];
-  function anotar(msg) {
-    lineas.push(new Date().toISOString().slice(11, 19) + '  ' + msg);
-    if (log) log.textContent = lineas.join('\n');
-    console.log('[smd-doc]', msg);
-  }
+  <div id="smd-doc-overlay" role="dialog" aria-modal="true" aria-labelledby="smd-doc-title">
+    <div id="smd-doc-modal">
+      <h2 id="smd-doc-title">Recurso exclusivo de la red del Sanatorio</h2>
+      <p>
+        El Asistente de Documentos Institucionales solo está disponible desde la red
+        del Sanatorio, por wifi institucional o conectado por VPN. Volvé a intentarlo
+        desde una computadora del Sanatorio.
+      </p>
+      <div id="smd-doc-actions">
+        <button id="smd-doc-close" type="button">Entendido</button>
+        <button id="smd-doc-continue" type="button">Intentar de todos modos</button>
+      </div>
+    </div>
+  </div>
 
-  // Sonda por imagen: onload solo dispara si vuelve una imagen decodificable,
-  // así que un 403 con cuerpo HTML cuenta como fallo. Es la única señal que
-  // cruza orígenes sin CORS.
-  function sondear(url) {
-    return new Promise(function (resolve) {
-      var t0 = Date.now(), img = new Image(), listo = false;
-      var t = setTimeout(function () { if (!listo) { listo = true; img.src = ''; resolve({ ok:false, ms:Date.now()-t0, motivo:'timeout' }); } }, TIMEOUT);
-      img.onload  = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:true,  ms:Date.now()-t0, motivo:'onload'  }); } };
-      img.onerror = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:false, ms:Date.now()-t0, motivo:'onerror' }); } };
-      img.src = url + (url.indexOf('data:') === 0 ? '' : (url.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now());
+  <script>
+  (function () {
+    var AGENTE = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales';
+    // Sonda: imagen que el portal sirve solo a la red interna. NO usar
+    // favicon.png, que está expuesto a internet y daría "disponible" siempre.
+    var SONDA   = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png';
+    var TIMEOUT = 3000;
+
+    var boton    = document.getElementById('smd-doc-btn');
+    var overlay  = document.getElementById('smd-doc-overlay');
+    var cerrar   = document.getElementById('smd-doc-close');
+    var seguir   = document.getElementById('smd-doc-continue');
+    var etiqueta = boton.textContent.trim();
+
+    // Navega la ventana de arriba: si el botón quedó dentro de un embed de Wix
+    // (iframe), cambiar location a secas movería solo el iframe.
+    function navegar() {
+      try { window.top.location.href = AGENTE; }
+      catch (err) { console.warn('[smd-doc] sin acceso a window.top:', err); window.location.href = AGENTE; }
+    }
+
+    function sondear() {
+      return new Promise(function (resolve) {
+        var t0 = Date.now(), img = new Image(), listo = false;
+        var t = setTimeout(function () { if (!listo) { listo = true; img.src = ''; resolve({ ok:false, ms:Date.now()-t0 }); } }, TIMEOUT);
+        img.onload  = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:true,  ms:Date.now()-t0 }); } };
+        img.onerror = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:false, ms:Date.now()-t0 }); } };
+        img.src = SONDA + '?t=' + Date.now();
+      });
+    }
+
+    function abrirAviso()  { overlay.classList.add('smd-open'); cerrar.focus(); }
+    function cerrarAviso() { overlay.classList.remove('smd-open'); boton.focus(); }
+
+    boton.addEventListener('click', function (e) {
+      e.preventDefault();
+      boton.setAttribute('aria-busy', 'true');
+      boton.textContent = 'Verificando…';
+      sondear().then(function (r) {
+        boton.removeAttribute('aria-busy');
+        boton.textContent = etiqueta;
+        console.log('[smd-doc] sonda:', r.ok ? 'portal alcanzable' : 'portal no alcanzable', '(' + r.ms + ' ms)');
+        if (r.ok) { navegar(); } else { abrirAviso(); }
+      });
     });
-  }
 
-  // Navega la ventana de arriba: si el botón quedó dentro de un embed de Wix
-  // (iframe), cambiar location a secas movería solo el iframe.
-  function navegar() {
-    anotar('navegando a ' + AGENTE);
-    try { window.top.location.href = AGENTE; }
-    catch (err) { anotar('sin acceso a window.top (' + err.name + '), navego local'); window.location.href = AGENTE; }
-  }
-
-  function abrirAviso() {
-    var ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99999';
-    ov.innerHTML =
-      '<div role="dialog" aria-modal="true" style="background:#fff;border-radius:14px;padding:28px;max-width:440px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3)">' +
-      '<h2 style="margin:0 0 12px;font-size:17px;color:#14182b;border:none;padding:0">Recurso exclusivo de la red del Sanatorio</h2>' +
-      '<p style="margin:0 0 22px;font-size:14px;line-height:1.55;color:#4b5563">El Asistente de Documentos Institucionales solo está disponible desde la red del Sanatorio, por wifi institucional o conectado por VPN. Volvé a intentarlo desde una computadora del Sanatorio.</p>' +
-      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
-      '<button data-a="cerrar" style="padding:10px 18px;border:none;border-radius:8px;background:#14182b;color:#fff;font-size:14px;cursor:pointer">Entendido</button>' +
-      '<button data-a="seguir" style="padding:10px 18px;border:none;border-radius:8px;background:transparent;color:#6b7280;font-size:14px;text-decoration:underline;cursor:pointer">Intentar de todos modos</button>' +
-      '</div></div>';
-    ov.addEventListener('click', function (e) {
-      if (e.target === ov || e.target.dataset.a === 'cerrar') { ov.remove(); anotar('aviso cerrado'); }
-      if (e.target.dataset.a === 'seguir') { navegar(); }
+    cerrar.addEventListener('click', cerrarAviso);
+    seguir.addEventListener('click', navegar);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) cerrarAviso(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('smd-open')) cerrarAviso();
     });
-    document.addEventListener('keydown', function esc(e) {
-      if (e.key === 'Escape' && document.body.contains(ov)) { ov.remove(); document.removeEventListener('keydown', esc); }
-    });
-    document.body.appendChild(ov);
-    anotar('aviso abierto');
-  }
-
-  // El clic hace todo: mide, explica y decide.
-  function alHacerClic(e) {
-    e.preventDefault();
-    var boton = e.currentTarget, etiqueta = boton.textContent.trim();
-    boton.setAttribute('aria-busy', 'true'); boton.textContent = 'Verificando…';
-    lineas = []; anotar('UA: ' + navigator.userAgent);
-    if (forzar) anotar('modo forzado: ' + forzar);
-
-    Promise.all([sondear(urlSonda), sondear(EXPUESTO)]).then(function (r) {
-      var interno = r[0], expuesto = r[1];
-      boton.removeAttribute('aria-busy'); boton.textContent = etiqueta;
-      anotar('recurso interno  -> ' + (interno.ok  ? 'carga' : 'falla') + '  (' + interno.ms  + ' ms, ' + interno.motivo  + ')');
-      anotar('recurso expuesto -> ' + (expuesto.ok ? 'carga' : 'falla') + '  (' + expuesto.ms + ' ms, ' + expuesto.motivo + ')');
-      if (interno.ok)            anotar('VEREDICTO: dentro de la red -> navego');
-      else if (expuesto.ok)      anotar('VEREDICTO: fuera de la red -> aviso');
-      else                       anotar('VEREDICTO: no se llega al portal (caído, sin internet o bloqueado) -> aviso');
-      interno.ok ? navegar() : abrirAviso();
-    });
-  }
-
-  function crearBoton() {
-    var a = document.createElement('a');
-    a.id = 'smd-doc-btn'; a.href = AGENTE; a.target = '_top';
-    a.textContent = 'Documentos Institucionales';
-    a.addEventListener('click', alHacerClic);
-    return a;
-  }
-
-  // ---- Vistas ----
-  if (vista === 'embebido') {
-    document.body.className = 'embebido';
-    app.appendChild(crearBoton());
-    log = document.createElement('div'); log.id = 'log'; log.style.marginTop = '12px';
-    log.textContent = 'Esperando el clic…'; app.appendChild(log);
-    return;
-  }
-
-  app.innerHTML =
-    '<h1>Botón — Documentos Institucionales</h1>' +
-    '<p class="sub">Un solo botón. Al hacer clic mide si el portal responde, deja el detalle abajo y según eso navega o muestra el aviso.</p>' +
-    '<div id="slot"></div>' +
-    (vista === 'iframe'
-      ? '<h2>Dentro de un iframe (como el HTML embed de Wix)</h2><iframe src="?vista=embebido&forzar=afuera" title="Botón embebido"></iframe>'
-      : '') +
-    '<h2>Consola</h2><div id="log">Esperando el clic…</div>' +
-    '<h2>Modos de prueba</h2><ul class="modos">' +
-      '<li><a href="?">Real</a> — sonda contra el portal; el resultado depende de la red desde la que abras esto.</li>' +
-      '<li><a href="?forzar=adentro">Forzar "adentro"</a> — la sonda siempre resuelve; debe navegar sin aviso.</li>' +
-      '<li><a href="?forzar=afuera">Forzar "afuera"</a> — la sonda siempre falla; debe abrir el aviso.</li>' +
-      '<li><a href="?vista=iframe&forzar=afuera">Dentro de un iframe</a> — verifica que "Intentar de todos modos" mueva la ventana de arriba y no el iframe.</li>' +
-    '</ul>';
-  document.getElementById('slot').appendChild(crearBoton());
-  log = document.getElementById('log');
-})();
-</script>
-</body>
-</html>
+  })();
+  </script>
+</div>
