@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Prueba — botón Documentos Institucionales</title>
+<!--
+  Banco de pruebas del botón que la intranet (Wix) va a ofrecer para entrar al
+  agente de Documentos Institucionales.
+
+  Vive acá y no en local a propósito: la restricción de Local Network Access de
+  Chrome 142+ solo se dispara cuando la página que hace la sonda está en un
+  ORIGEN PÚBLICO y el destino resuelve a una IP privada. Desde localhost nunca
+  se reproduce. Esta página está publicada en GitHub Pages y en Vercel, que es
+  la misma situación que tendrá el botón dentro de Wix.
+
+  Qué mirar: abrirla desde una PC del Sanatorio y desde un celular con 4G, y
+  comparar el resultado del diagnóstico.
+-->
+<style>
+  :root { --dark:#14182b; --accent:#D97706; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; max-width:780px; margin:0 auto; padding:28px 20px 60px; line-height:1.55; color:#1f2937; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  h2 { font-size:15px; margin:32px 0 8px; padding-top:16px; border-top:1px solid #e5e7eb; }
+  p.sub { color:#6b7280; font-size:14px; margin:0 0 8px; }
+  button.act { padding:10px 16px; border:none; border-radius:8px; background:var(--dark); color:#fff; font-size:14px; cursor:pointer; }
+  #log { background:#0f172a; color:#e2e8f0; font:12px/1.5 ui-monospace,Menlo,Consolas,monospace; padding:14px; border-radius:8px; white-space:pre-wrap; word-break:break-all; min-height:80px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; margin-top:10px; }
+  th,td { text-align:left; padding:7px 8px; border-bottom:1px solid #e5e7eb; }
+  .ok { color:#15803d; font-weight:600; } .no { color:#b91c1c; font-weight:600; }
+  iframe { width:100%; height:260px; border:1px solid #ddd; border-radius:8px; }
+  .fila { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:10px 0; }
+</style>
+</head>
+<body>
+
+<h1>Prueba del botón — Documentos Institucionales</h1>
+<p class="sub">Abrila desde una PC del Sanatorio y desde un celular con 4G. Todo se dispara con un clic, nada corre solo.</p>
+
+<h2>1. Diagnóstico de red</h2>
+<p class="sub">Carga imágenes del portal y mide si responden. Si en una PC del Sanatorio aparece un cartel de Chrome pidiendo permiso para acceder a la red local, anotalo: eso es Local Network Access y cambia el diseño del botón.</p>
+<div class="fila"><button class="act" id="diag">Ejecutar diagnóstico</button></div>
+<table id="tabla"><thead><tr><th>Recurso</th><th>Esperado adentro</th><th>Esperado afuera</th><th>Resultado</th></tr></thead><tbody></tbody></table>
+
+<h2>2. El botón, con las URLs reales</h2>
+<p class="sub">Es el snippet tal cual se entregaría para Wix.</p>
+<div class="fila" id="slot-real"></div>
+
+<h2>3. Casos forzados</h2>
+<p class="sub">Independientes de la red: prueban la lógica y el modal en cualquier lado.</p>
+<div class="fila" id="slot-forzados"></div>
+
+<h2>4. Dentro de un iframe</h2>
+<p class="sub">Como lo cargaría un HTML embed de Wix. Interesa que el modal se dibuje bien y que "Intentar de todos modos" mueva la ventana de arriba, no el iframe.</p>
+<iframe src="./prueba-boton-documentos.html?solo=forzado-afuera" title="Botón embebido"></iframe>
+
+<h2>Consola</h2>
+<div id="log">Esperando…</div>
+
+<script>
+(function () {
+  var PORTAL   = 'https://apps.sanatoriomaterdei.com.ar/portal_ia';
+  var AGENTE   = PORTAL + '/embed/documentos-institucionales';
+  var SONDA    = PORTAL + '/logo-materdei.png';   // interno: 200 adentro, 403 afuera
+  var EXPUESTO = PORTAL + '/favicon.png';         // en la allowlist: 200 en todos lados
+  var PIXEL    = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  var TIMEOUT  = 3000;
+
+  var log = document.getElementById('log');
+  var lineas = [];
+  function anotar(msg) {
+    lineas.push(new Date().toISOString().slice(11, 19) + '  ' + msg);
+    log.textContent = lineas.join('\n');
+    console.log('[prueba]', msg);
+  }
+  anotar('UA: ' + navigator.userAgent);
+
+  // Sonda por imagen: onload solo dispara si vuelve una imagen decodificable.
+  function sondear(url) {
+    return new Promise(function (resolve) {
+      var t0 = Date.now(), img = new Image(), listo = false;
+      var t = setTimeout(function () { if (!listo) { listo = true; img.src = ''; resolve({ ok:false, ms:Date.now()-t0, motivo:'timeout' }); } }, TIMEOUT);
+      img.onload  = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:true,  ms:Date.now()-t0, motivo:'onload'  }); } };
+      img.onerror = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:false, ms:Date.now()-t0, motivo:'onerror' }); } };
+      img.src = url + (url.indexOf('data:') === 0 ? '' : (url.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now());
+    });
+  }
+
+  // ---- 1. Diagnóstico ----
+  var CASOS = [
+    { url: SONDA,    nombre: 'logo-materdei.png (interno)', adentro: 'carga', afuera: 'falla' },
+    { url: EXPUESTO, nombre: 'favicon.png (expuesto)',      adentro: 'carga', afuera: 'carga' },
+    { url: AGENTE,   nombre: 'la URL del agente (no es imagen)', adentro: 'falla', afuera: 'falla' }
+  ];
+  document.getElementById('diag').addEventListener('click', function () {
+    var tbody = document.querySelector('#tabla tbody');
+    tbody.innerHTML = '';
+    anotar('--- diagnóstico ---');
+    CASOS.forEach(function (c) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + c.nombre + '</td><td>' + c.adentro + '</td><td>' + c.afuera + '</td><td>midiendo…</td>';
+      tbody.appendChild(tr);
+      sondear(c.url).then(function (r) {
+        tr.lastChild.innerHTML = '<span class="' + (r.ok ? 'ok' : 'no') + '">' + (r.ok ? 'carga' : 'falla') + '</span> · ' + r.ms + ' ms · ' + r.motivo;
+        anotar(c.nombre + ' -> ' + (r.ok ? 'carga' : 'falla') + ' (' + r.ms + ' ms, ' + r.motivo + ')');
+      });
+    });
+    sondear(SONDA).then(function (r) {
+      anotar('VEREDICTO: ' + (r.ok ? 'parece estar DENTRO de la red' : 'parece estar FUERA de la red'));
+    });
+  });
+
+  // ---- Botón reutilizable ----
+  function crearBoton(etiqueta, urlSonda, urlDestino, contenedor) {
+    var b = document.createElement('button');
+    b.className = 'act'; b.style.background = 'var(--accent)'; b.textContent = etiqueta;
+    b.addEventListener('click', function () {
+      var original = b.textContent;
+      b.textContent = 'Verificando…'; b.disabled = true;
+      sondear(urlSonda).then(function (r) {
+        b.textContent = original; b.disabled = false;
+        anotar(etiqueta + ' -> sonda ' + (r.ok ? 'ok' : 'falla') + ' (' + r.ms + ' ms)');
+        if (r.ok) { navegar(urlDestino); } else { abrirModal(urlDestino); }
+      });
+    });
+    contenedor.appendChild(b);
+  }
+
+  function navegar(url) {
+    anotar('navegando a ' + url);
+    try { window.top.location.href = url; }
+    catch (err) { anotar('sin acceso a window.top (' + err.name + '), navego local'); window.location.href = url; }
+  }
+
+  function abrirModal(urlDestino) {
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:99999';
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:14px;padding:28px;max-width:440px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3)">' +
+      '<h2 style="margin:0 0 12px;font-size:17px;color:#14182b">Recurso exclusivo de la red del Sanatorio</h2>' +
+      '<p style="margin:0 0 22px;font-size:14px;line-height:1.55;color:#4b5563">El Asistente de Documentos Institucionales solo está disponible desde la red del Sanatorio, por wifi institucional o conectado por VPN. Volvé a intentarlo desde una computadora del Sanatorio.</p>' +
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
+      '<button data-a="cerrar" style="padding:10px 18px;border:none;border-radius:8px;background:#14182b;color:#fff;font-size:14px;cursor:pointer">Entendido</button>' +
+      '<button data-a="seguir" style="padding:10px 18px;border:none;border-radius:8px;background:transparent;color:#6b7280;font-size:14px;text-decoration:underline;cursor:pointer">Intentar de todos modos</button>' +
+      '</div></div>';
+    ov.addEventListener('click', function (e) {
+      if (e.target === ov || e.target.dataset.a === 'cerrar') { ov.remove(); anotar('modal cerrado'); }
+      if (e.target.dataset.a === 'seguir') { navegar(urlDestino); }
+    });
+    document.body.appendChild(ov);
+    anotar('modal abierto');
+  }
+
+  // ---- Montaje ----
+  var params = new URLSearchParams(location.search);
+  if (params.get('solo') === 'forzado-afuera') {
+    // Modo iframe: solo el botón que fuerza "afuera".
+    document.body.innerHTML = '<div class="fila" id="slot"></div><div id="log"></div>';
+    log = document.getElementById('log');
+    crearBoton('Documentos Institucionales', './no-existe-a-proposito.png', AGENTE, document.getElementById('slot'));
+    return;
+  }
+  crearBoton('Documentos Institucionales', SONDA, AGENTE, document.getElementById('slot-real'));
+  crearBoton('Forzar "adentro"', PIXEL, './?volvi=1', document.getElementById('slot-forzados'));
+  crearBoton('Forzar "afuera"', './no-existe-a-proposito.png', './?volvi=1', document.getElementById('slot-forzados'));
+})();
+</script>
+</body>
+</html>
