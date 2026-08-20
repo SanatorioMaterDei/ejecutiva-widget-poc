@@ -447,10 +447,18 @@
       #chat-panel { width: calc(100vw - 16px); right: 8px; height: 520px; }
     }
 
-    /* ── Botón Documentos Institucionales ─────────────────── */
-    /* Widget autocontenido, prefijo smd-doc-. Version de referencia:
-       prueba-boton-documentos.html (ese archivo es el que se pega en Wix). */
-    #smd-doc-btn {
+    /* ── Botones de agentes (Documentos, FarmacIA, FarmacIA Interna) ── */
+    /* Un solo estilo y un solo aviso compartido: cada botón declara su
+       destino y su sonda en data-*. Las versiones autocontenidas que se
+       pegan en Wix son los archivos sueltos (uno por agente); acá están
+       unificadas porque esta página es solo el host de prueba. */
+    .smd-agente-group {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      flex-wrap: wrap;
+    }
+    .smd-agente-btn {
       display: inline-flex;
       align-items: center;
       gap: .55rem;
@@ -466,12 +474,12 @@
       cursor: pointer;
       transition: background .15s ease;
     }
-    #smd-doc-btn svg { flex: none; }
-    #smd-doc-btn:hover { background: var(--smd-btn-bg-hover); }
-    #smd-doc-btn:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
-    #smd-doc-btn[aria-busy="true"] { background: var(--smd-btn-bg-hover); pointer-events: none; }
+    .smd-agente-btn svg { flex: none; }
+    .smd-agente-btn:hover { background: var(--smd-btn-bg-hover); }
+    .smd-agente-btn:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
+    .smd-agente-btn[aria-busy="true"] { background: var(--smd-btn-bg-hover); pointer-events: none; }
 
-    #smd-doc-overlay {
+    #smd-aviso-overlay {
       position: fixed;
       inset: 0;
       background: rgba(0,40,86,.55);
@@ -481,8 +489,8 @@
       padding: 20px;
       z-index: 99999;   /* por encima de la burbuja (100) y del panel (99) */
     }
-    #smd-doc-overlay.smd-open { display: flex; }
-    #smd-doc-modal {
+    #smd-aviso-overlay.smd-open { display: flex; }
+    #smd-aviso-modal {
       background: #fff;
       border-radius: 10px;
       border-top: 6px solid var(--smd-azul);
@@ -492,7 +500,7 @@
       box-shadow: 0 12px 40px rgba(0,40,86,.28);
       text-align: center;
     }
-    #smd-doc-icono {
+    #smd-aviso-icono {
       width: 56px; height: 56px;
       margin: 0 auto 18px;
       border-radius: 50%;
@@ -502,21 +510,21 @@
       align-items: center;
       justify-content: center;
     }
-    #smd-doc-modal h2 {
+    #smd-aviso-modal h2 {
       margin: 0 0 12px;
       font-size: 18px;
       line-height: 1.35;
       font-weight: 700;
       color: var(--smd-azul);
     }
-    #smd-doc-modal p {
+    #smd-aviso-modal p {
       margin: 0 0 24px;
       font-size: 14px;
       line-height: 1.6;
       color: var(--smd-gris);
     }
-    #smd-doc-actions { display: flex; justify-content: center; }
-    #smd-doc-close {
+    #smd-aviso-actions { display: flex; justify-content: center; }
+    #smd-aviso-close {
       padding: 12px 32px;
       border: none;
       border-radius: 6px;
@@ -528,8 +536,8 @@
       cursor: pointer;
       transition: background .15s ease;
     }
-    #smd-doc-close:hover { background: var(--smd-azul-hover); }
-    #smd-doc-close:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
+    #smd-aviso-close:hover { background: var(--smd-azul-hover); }
+    #smd-aviso-close:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -601,14 +609,46 @@
             <span class="pulse"></span>
             Actualizado hace 4 min
           </div>
-          <a id="smd-doc-btn" href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales" target="_blank" rel="noopener">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>
-            </svg>
-            <span id="smd-doc-btn-texto">Documentos Institucionales</span>
-          </a>
+          <div class="smd-agente-group">
+            <a class="smd-agente-btn" target="_blank" rel="noopener"
+               href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales"
+               data-sonda="https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png"
+               data-agente="Documentos Institucionales" data-log="smd-doc">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>
+              </svg>
+              <span class="smd-agente-btn-texto">Documentos Institucionales</span>
+            </a>
+
+            <!-- FarmacIA y FarmacIA Interna apuntan a DEV (portal_ia_dev): son
+                 los botones nuevos, todavía en prueba. Al pasar a prod hay que
+                 cambiar portal_ia_dev por portal_ia en href y data-sonda. -->
+            <a class="smd-agente-btn" target="_blank" rel="noopener"
+               href="https://apps.sanatoriomaterdei.com.ar/portal_ia_dev/embed/farmacia"
+               data-sonda="https://apps.sanatoriomaterdei.com.ar/portal_ia_dev/logo-materdei.png"
+               data-agente="FarmacIA" data-log="smd-farm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 0 1 7-7l7 7a4.95 4.95 0 0 1-7 7Z"/>
+                <path d="m8.5 8.5 7 7"/>
+              </svg>
+              <span class="smd-agente-btn-texto">FarmacIA</span>
+            </a>
+
+            <a class="smd-agente-btn" target="_blank" rel="noopener"
+               href="https://apps.sanatoriomaterdei.com.ar/portal_ia_dev/embed/farmacia_interna"
+               data-sonda="https://apps.sanatoriomaterdei.com.ar/portal_ia_dev/logo-materdei.png"
+               data-agente="FarmacIA Interna" data-log="smd-farmi">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+              </svg>
+              <span class="smd-agente-btn-texto">FarmacIA Interna</span>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -696,24 +736,24 @@
     </main>
   </div>
 
-  <!-- ── Aviso: Documentos Institucionales fuera de la red ── -->
-  <div id="smd-doc-overlay" role="dialog" aria-modal="true" aria-labelledby="smd-doc-title">
-    <div id="smd-doc-modal">
-      <div id="smd-doc-icono" aria-hidden="true">
+  <!-- ── Aviso compartido: agente fuera de la red interna ── -->
+  <div id="smd-aviso-overlay" role="dialog" aria-modal="true" aria-labelledby="smd-aviso-title">
+    <div id="smd-aviso-modal">
+      <div id="smd-aviso-icono" aria-hidden="true">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="11" width="18" height="10" rx="2"/>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
       </div>
-      <h2 id="smd-doc-title">Recurso exclusivo de la red del Sanatorio</h2>
+      <h2 id="smd-aviso-title">Recurso exclusivo de la red del Sanatorio</h2>
       <p>
-        El Asistente de Documentos Institucionales solo está disponible desde la red
+        El Asistente de <span id="smd-aviso-agente">Documentos Institucionales</span> solo está disponible desde la red
         del Sanatorio, por wifi institucional o conectado por VPN. Volvé a intentarlo
         desde una computadora del Sanatorio.
       </p>
-      <div id="smd-doc-actions">
-        <button id="smd-doc-close" type="button">Entendido</button>
+      <div id="smd-aviso-actions">
+        <button id="smd-aviso-close" type="button">Entendido</button>
       </div>
     </div>
   </div>
@@ -779,22 +819,17 @@
       if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
     });
 
-    // ── Botón Documentos Institucionales ──
-    // El agente solo se publica dentro de la red del Sanatorio: antes de
+    // ── Botones de agentes ──
+    // Los agentes solo se publican dentro de la red del Sanatorio: antes de
     // navegar se sondea el portal y, si no responde, se muestra el aviso.
     // IIFE para no chocar con las const de arriba (iframe, close, loaded…).
     (function () {
-      var AGENTE = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales';
-      // Sonda: imagen que el portal sirve solo a la red interna. NO usar
-      // favicon.png, que está expuesto a internet y daría "disponible" siempre.
-      var SONDA   = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png';
       var TIMEOUT = 3000;
 
-      var boton    = document.getElementById('smd-doc-btn');
-      var rotulo   = document.getElementById('smd-doc-btn-texto');
-      var overlay  = document.getElementById('smd-doc-overlay');
-      var cerrar   = document.getElementById('smd-doc-close');
-      var etiqueta = rotulo.textContent.trim();
+      var overlay = document.getElementById('smd-aviso-overlay');
+      var cerrar  = document.getElementById('smd-aviso-close');
+      var nombre  = document.getElementById('smd-aviso-agente');
+      var ultimo  = null;   // botón que abrió el aviso, para devolverle el foco
 
       // La pestaña se pide en el mismo click, ANTES de sondear: si se pidiera dentro
       // del .then() el navegador la bloquearía como popup, porque el gesto del
@@ -805,39 +840,55 @@
         return w;
       }
 
-      function navegar(pestana) {
-        if (pestana && !pestana.closed) { pestana.location.replace(AGENTE); return; }
+      function navegar(pestana, destino, log) {
+        if (pestana && !pestana.closed) { pestana.location.replace(destino); return; }
         // Sin pestaña (popup bloqueado): último recurso, window.top. Va por window.top
-        // y no por location a secas porque dentro del iframe de Wix un location común
+        // y no por location a secas porque dentro de un iframe un location común
         // movería solo el iframe.
-        try { window.top.location.href = AGENTE; }
-        catch (err) { console.warn('[smd-doc] sin acceso a window.top:', err); window.location.href = AGENTE; }
+        try { window.top.location.href = destino; }
+        catch (err) { console.warn('[' + log + '] sin acceso a window.top:', err); window.location.href = destino; }
       }
 
-      function sondear() {
+      function sondear(url) {
         return new Promise(function (resolve) {
           var t0 = Date.now(), img = new Image(), listo = false;
           var t = setTimeout(function () { if (!listo) { listo = true; img.src = ''; resolve({ ok:false, ms:Date.now()-t0 }); } }, TIMEOUT);
           img.onload  = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:true,  ms:Date.now()-t0 }); } };
           img.onerror = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:false, ms:Date.now()-t0 }); } };
-          img.src = SONDA + '?t=' + Date.now();
+          img.src = url + '?t=' + Date.now();
         });
       }
 
-      function abrirAviso()  { overlay.classList.add('smd-open'); cerrar.focus(); }
-      function cerrarAviso() { overlay.classList.remove('smd-open'); boton.focus(); }
+      function abrirAviso(boton) {
+        ultimo = boton;
+        nombre.textContent = boton.getAttribute('data-agente');
+        overlay.classList.add('smd-open');
+        cerrar.focus();
+      }
+      function cerrarAviso() {
+        overlay.classList.remove('smd-open');
+        if (ultimo) { ultimo.focus(); }
+      }
 
-      boton.addEventListener('click', function (e) {
-        e.preventDefault();
-        var pestana = abrirPestana();
-        boton.setAttribute('aria-busy', 'true');
-        rotulo.textContent = 'Verificando…';
-        sondear().then(function (r) {
-          boton.removeAttribute('aria-busy');
-          rotulo.textContent = etiqueta;
-          console.log('[smd-doc] sonda:', r.ok ? 'portal alcanzable' : 'portal no alcanzable', '(' + r.ms + ' ms)');
-          if (r.ok) { navegar(pestana); }
-          else { if (pestana && !pestana.closed) pestana.close(); abrirAviso(); }
+      Array.prototype.forEach.call(document.querySelectorAll('.smd-agente-btn'), function (boton) {
+        var rotulo   = boton.querySelector('.smd-agente-btn-texto');
+        var etiqueta = rotulo.textContent.trim();
+        var destino  = boton.getAttribute('href');
+        var sonda    = boton.getAttribute('data-sonda');
+        var log      = boton.getAttribute('data-log');
+
+        boton.addEventListener('click', function (e) {
+          e.preventDefault();
+          var pestana = abrirPestana();
+          boton.setAttribute('aria-busy', 'true');
+          rotulo.textContent = 'Verificando…';
+          sondear(sonda).then(function (r) {
+            boton.removeAttribute('aria-busy');
+            rotulo.textContent = etiqueta;
+            console.log('[' + log + '] sonda:', r.ok ? 'portal alcanzable' : 'portal no alcanzable', '(' + r.ms + ' ms)');
+            if (r.ok) { navegar(pestana, destino, log); }
+            else { if (pestana && !pestana.closed) pestana.close(); abrirAviso(boton); }
+          });
         });
       });
 
