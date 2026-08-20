@@ -16,6 +16,17 @@
       --text-2:   #5A6A80;
       --text-3:   #8A9AB2;
       --sidebar-w: 216px;
+
+      /* Paleta institucional — "Colores permitidos - Web" */
+      --smd-azul:       #002856;  /* P295C  */
+      --smd-azul-hover: #1A3E67;  /* tinte de P295C */
+      --smd-azul-claro: #92C0E9;  /* P283C  */
+      --smd-azul-suave: #C2D5ED;  /* P2707C */
+      --smd-gris:       #5C5C5C;  /* escala de grises */
+      /* Rol del boton segun tema (solo colores de la paleta) */
+      --smd-btn-bg:       var(--smd-azul);
+      --smd-btn-bg-hover: var(--smd-azul-hover);
+      --smd-btn-fg:       #FFFFFF;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -25,9 +36,15 @@
         --text:    #D8E4F4;
         --text-2:  #7A94B8;
         --text-3:  #4A6080;
+        --smd-btn-bg:       var(--smd-azul-claro);
+        --smd-btn-bg-hover: var(--smd-azul-suave);
+        --smd-btn-fg:       var(--smd-azul);
       }
     }
     :root[data-theme="light"] {
+      --smd-btn-bg:       var(--smd-azul);
+      --smd-btn-bg-hover: var(--smd-azul-hover);
+      --smd-btn-fg:       #FFFFFF;
       --bg:      #EEF2F7;
       --surface: #FFFFFF;
       --border:  #D0D8E4;
@@ -36,6 +53,9 @@
       --text-3:  #8A9AB2;
     }
     :root[data-theme="dark"] {
+      --smd-btn-bg:       var(--smd-azul-claro);
+      --smd-btn-bg-hover: var(--smd-azul-suave);
+      --smd-btn-fg:       var(--smd-azul);
       --bg:      #080F1C;
       --surface: #0E1F3A;
       --border:  #1A3055;
@@ -173,9 +193,17 @@
 
     .page-header {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
       margin-bottom: 1.5rem;
+    }
+    .page-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
     }
     .page-header h1 { font-size: 1.2rem; font-weight: 700; }
     .live-badge {
@@ -418,6 +446,90 @@
       .main { margin-left: 0; }
       #chat-panel { width: calc(100vw - 16px); right: 8px; height: 520px; }
     }
+
+    /* ── Botón Documentos Institucionales ─────────────────── */
+    /* Widget autocontenido, prefijo smd-doc-. Version de referencia:
+       prueba-boton-documentos.html (ese archivo es el que se pega en Wix). */
+    #smd-doc-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .7rem 1.15rem;
+      background: var(--smd-btn-bg);
+      color: var(--smd-btn-fg);
+      border: none;
+      border-radius: 6px;
+      font-size: .84rem;
+      font-weight: 600;
+      letter-spacing: .01em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .15s ease;
+    }
+    #smd-doc-btn svg { flex: none; }
+    #smd-doc-btn:hover { background: var(--smd-btn-bg-hover); }
+    #smd-doc-btn:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
+    #smd-doc-btn[aria-busy="true"] { background: var(--smd-btn-bg-hover); pointer-events: none; }
+
+    #smd-doc-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,40,86,.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 99999;   /* por encima de la burbuja (100) y del panel (99) */
+    }
+    #smd-doc-overlay.smd-open { display: flex; }
+    #smd-doc-modal {
+      background: #fff;
+      border-radius: 10px;
+      border-top: 6px solid var(--smd-azul);
+      padding: 32px 30px 28px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0,40,86,.28);
+      text-align: center;
+    }
+    #smd-doc-icono {
+      width: 56px; height: 56px;
+      margin: 0 auto 18px;
+      border-radius: 50%;
+      background: var(--smd-azul-suave);
+      color: var(--smd-azul);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #smd-doc-modal h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 700;
+      color: var(--smd-azul);
+    }
+    #smd-doc-modal p {
+      margin: 0 0 24px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--smd-gris);
+    }
+    #smd-doc-actions { display: flex; justify-content: center; }
+    #smd-doc-close {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 6px;
+      background: var(--smd-azul);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s ease;
+    }
+    #smd-doc-close:hover { background: var(--smd-azul-hover); }
+    #smd-doc-close:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -484,9 +596,19 @@
     <main class="content">
       <div class="page-header">
         <h1>Resumen del día</h1>
-        <div class="live-badge">
-          <span class="pulse"></span>
-          Actualizado hace 4 min
+        <div class="page-actions">
+          <div class="live-badge">
+            <span class="pulse"></span>
+            Actualizado hace 4 min
+          </div>
+          <a id="smd-doc-btn" href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales" target="_top">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>
+            </svg>
+            <span id="smd-doc-btn-texto">Documentos Institucionales</span>
+          </a>
         </div>
       </div>
 
@@ -574,6 +696,28 @@
     </main>
   </div>
 
+  <!-- ── Aviso: Documentos Institucionales fuera de la red ── -->
+  <div id="smd-doc-overlay" role="dialog" aria-modal="true" aria-labelledby="smd-doc-title">
+    <div id="smd-doc-modal">
+      <div id="smd-doc-icono" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <h2 id="smd-doc-title">Recurso exclusivo de la red del Sanatorio</h2>
+      <p>
+        El Asistente de Documentos Institucionales solo está disponible desde la red
+        del Sanatorio, por wifi institucional o conectado por VPN. Volvé a intentarlo
+        desde una computadora del Sanatorio.
+      </p>
+      <div id="smd-doc-actions">
+        <button id="smd-doc-close" type="button">Entendido</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Floating bubble ── -->
   <button id="chat-bubble" aria-label="Abrir asistente de RRHH" aria-expanded="false" title="Asistente de RRHH">
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -634,6 +778,62 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
     });
+
+    // ── Botón Documentos Institucionales ──
+    // El agente solo se publica dentro de la red del Sanatorio: antes de
+    // navegar se sondea el portal y, si no responde, se muestra el aviso.
+    // IIFE para no chocar con las const de arriba (iframe, close, loaded…).
+    (function () {
+      var AGENTE = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales';
+      // Sonda: imagen que el portal sirve solo a la red interna. NO usar
+      // favicon.png, que está expuesto a internet y daría "disponible" siempre.
+      var SONDA   = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png';
+      var TIMEOUT = 3000;
+
+      var boton    = document.getElementById('smd-doc-btn');
+      var rotulo   = document.getElementById('smd-doc-btn-texto');
+      var overlay  = document.getElementById('smd-doc-overlay');
+      var cerrar   = document.getElementById('smd-doc-close');
+      var etiqueta = rotulo.textContent.trim();
+
+      // window.top por si esta página se embebe en un iframe: un cambio de
+      // location a secas movería solo el iframe.
+      function navegar() {
+        try { window.top.location.href = AGENTE; }
+        catch (err) { console.warn('[smd-doc] sin acceso a window.top:', err); window.location.href = AGENTE; }
+      }
+
+      function sondear() {
+        return new Promise(function (resolve) {
+          var t0 = Date.now(), img = new Image(), listo = false;
+          var t = setTimeout(function () { if (!listo) { listo = true; img.src = ''; resolve({ ok:false, ms:Date.now()-t0 }); } }, TIMEOUT);
+          img.onload  = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:true,  ms:Date.now()-t0 }); } };
+          img.onerror = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:false, ms:Date.now()-t0 }); } };
+          img.src = SONDA + '?t=' + Date.now();
+        });
+      }
+
+      function abrirAviso()  { overlay.classList.add('smd-open'); cerrar.focus(); }
+      function cerrarAviso() { overlay.classList.remove('smd-open'); boton.focus(); }
+
+      boton.addEventListener('click', function (e) {
+        e.preventDefault();
+        boton.setAttribute('aria-busy', 'true');
+        rotulo.textContent = 'Verificando…';
+        sondear().then(function (r) {
+          boton.removeAttribute('aria-busy');
+          rotulo.textContent = etiqueta;
+          console.log('[smd-doc] sonda:', r.ok ? 'portal alcanzable' : 'portal no alcanzable', '(' + r.ms + ' ms)');
+          if (r.ok) { navegar(); } else { abrirAviso(); }
+        });
+      });
+
+      cerrar.addEventListener('click', cerrarAviso);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) cerrarAviso(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('smd-open')) cerrarAviso();
+      });
+    })();
   </script>
 </body>
 </html>
