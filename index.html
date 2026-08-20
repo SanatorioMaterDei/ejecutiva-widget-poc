@@ -601,7 +601,7 @@
             <span class="pulse"></span>
             Actualizado hace 4 min
           </div>
-          <a id="smd-doc-btn" href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales" target="_top">
+          <a id="smd-doc-btn" href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales" target="_blank" rel="noopener">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -796,9 +796,20 @@
       var cerrar   = document.getElementById('smd-doc-close');
       var etiqueta = rotulo.textContent.trim();
 
-      // window.top por si esta página se embebe en un iframe: un cambio de
-      // location a secas movería solo el iframe.
-      function navegar() {
+      // La pestaña se pide en el mismo click, ANTES de sondear: si se pidiera dentro
+      // del .then() el navegador la bloquearía como popup, porque el gesto del
+      // usuario ya habría caducado. Si la sonda falla, la pestaña se cierra.
+      function abrirPestana() {
+        var w = window.open('', '_blank');
+        if (w) { try { w.opener = null; } catch (err) {} }
+        return w;
+      }
+
+      function navegar(pestana) {
+        if (pestana && !pestana.closed) { pestana.location.replace(AGENTE); return; }
+        // Sin pestaña (popup bloqueado): último recurso, window.top. Va por window.top
+        // y no por location a secas porque dentro del iframe de Wix un location común
+        // movería solo el iframe.
         try { window.top.location.href = AGENTE; }
         catch (err) { console.warn('[smd-doc] sin acceso a window.top:', err); window.location.href = AGENTE; }
       }
@@ -818,13 +829,15 @@
 
       boton.addEventListener('click', function (e) {
         e.preventDefault();
+        var pestana = abrirPestana();
         boton.setAttribute('aria-busy', 'true');
         rotulo.textContent = 'Verificando…';
         sondear().then(function (r) {
           boton.removeAttribute('aria-busy');
           rotulo.textContent = etiqueta;
           console.log('[smd-doc] sonda:', r.ok ? 'portal alcanzable' : 'portal no alcanzable', '(' + r.ms + ' ms)');
-          if (r.ok) { navegar(); } else { abrirAviso(); }
+          if (r.ok) { navegar(pestana); }
+          else { if (pestana && !pestana.closed) pestana.close(); abrirAviso(); }
         });
       });
 
