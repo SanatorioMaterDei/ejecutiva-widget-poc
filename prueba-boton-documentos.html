@@ -6,10 +6,10 @@
 
   QUÉ ES
   Un botón que lleva al Asistente de Documentos Institucionales. El agente solo
-  está publicado dentro de la red del Sanatorio, así que antes de navegar el
-  botón verifica si el portal responde: si responde, lo abre en una pestaña
-  nueva; si no, muestra un aviso explicando que el recurso es exclusivo de la
-  red interna.
+  se sirve dentro de la red del Sanatorio; desde internet el dominio resuelve a
+  una IP pública que contesta 403. El botón abre el agente en una pestaña nueva,
+  y solo cuando puede PROBAR que el usuario está afuera lo frena antes y muestra
+  el aviso, para que no aterrice en la página de error de nginx.
 
   CÓMO SE INSTALA EN WIX
   1. Editor de Wix -> Agregar (+) -> Incrustar código -> HTML incrustado.
@@ -169,13 +169,61 @@
       catch (err) { console.warn('[smd-doc] sin acceso a window.top:', err); window.location.href = AGENTE; }
     }
 
-    function sondear() {
+    // ── Cómo se decide si el usuario está afuera ──────────────────────────────
+    // El dominio tiene DNS partido: adentro resuelve a 10.1.1.15, una IP privada, y
+    // desde internet a una IP pública cuyo nginx contesta 403. Tres situaciones, una
+    // sola justifica el aviso. Medido en Chromium 148:
+    //
+    //   adentro, Chromium (Local Network Access bloquea)  img onerror | fetch RECHAZA  -> navegar
+    //   afuera (el borde público contesta 403)            img onerror | fetch RESUELVE -> AVISO
+    //   adentro, Firefox/Safari (no implementan LNA)      img ONLOAD  | fetch resuelve  -> navegar
+    //
+    // Cada señal contesta una pregunta distinta: la imagen dice "¿puedo obtener el
+    // recurso?" y el fetch dice "¿mi pedido llegó a algún servidor?". Haber llegado y
+    // NO haber obtenido el recurso es la firma de estar afuera. NO decidir esto por
+    // tiempo: un 403 del borde público (69 ms) es MÁS rápido que un rechazo por
+    // política (76 ms), porque es un viaje completo de ida y vuelta.
+
+    // ¿Puedo obtener el recurso? Solo onload cuenta como sí.
+    function tengoElRecurso() {
       return new Promise(function (resolve) {
-        var t0 = Date.now(), img = new Image(), listo = false;
-        var t = setTimeout(function () { if (!listo) { listo = true; img.src = ''; resolve({ ok:false, ms:Date.now()-t0 }); } }, TIMEOUT);
-        img.onload  = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:true,  ms:Date.now()-t0 }); } };
-        img.onerror = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:false, ms:Date.now()-t0 }); } };
-        img.src = SONDA + '?t=' + Date.now();
+        var img = new Image(), listo = false;
+        function fin(v) { if (!listo) { listo = true; resolve(v); } }
+        setTimeout(function () { img.src = ''; fin(false); }, TIMEOUT);
+        img.onload  = function () { fin(true); };
+        img.onerror = function () { fin(false); };
+        img.src = SONDA + '?i=' + Date.now();
+      });
+    }
+
+    // ¿El pedido llegó a algún servidor? En no-cors la respuesta es opaca y el status no
+    // se puede leer, pero alcanza con que la promesa resuelva: eso ya prueba que salió y
+    // volvió. Si Local Network Access lo bloquea, el navegador ni lo manda y rechaza.
+    function llegoAUnServidor() {
+      return new Promise(function (resolve) {
+        var listo = false;
+        function fin(v) { if (!listo) { listo = true; resolve(v); } }
+        setTimeout(function () { fin(false); }, TIMEOUT);
+        try {
+          fetch(SONDA + '?f=' + Date.now(), { mode: 'no-cors', cache: 'no-store' })
+            .then(function () { fin(true); }, function () { fin(false); });
+        } catch (err) { fin(false); }
+      });
+    }
+
+    // 'adentro' | 'afuera' | 'no-se'
+    function sondear() {
+      var t0 = Date.now();
+      return new Promise(function (resolve) {
+        var listo = false;
+        function fin(v) { if (!listo) { listo = true; resolve({ veredicto:v, ms:Date.now()-t0 }); } }
+        var recurso = tengoElRecurso(), llego = llegoAUnServidor();
+        // Si la imagen carga ya está todo dicho; no se espera al fetch, que con el cartel
+        // de permiso de red local en pantalla puede quedar colgado hasta el TIMEOUT.
+        recurso.then(function (ok) { if (ok) { fin('adentro'); } });
+        Promise.all([recurso, llego]).then(function (v) {
+          fin(v[0] ? 'adentro' : (v[1] ? 'afuera' : 'no-se'));
+        });
       });
     }
 
@@ -190,9 +238,18 @@
       sondear().then(function (r) {
         boton.removeAttribute('aria-busy');
         rotulo.textContent = etiqueta;
-        console.log('[smd-doc] sonda:', r.ok ? 'portal alcanzable' : 'portal no alcanzable', '(' + r.ms + ' ms)');
-        if (r.ok) { navegar(pestana); }
-        else { if (pestana && !pestana.closed) pestana.close(); abrirAviso(); }
+        console.log('[smd-doc] sonda:', r.veredicto, '(' + r.ms + ' ms)');
+        // Único caso que muestra el aviso: llegamos a un servidor y nos negó el recurso.
+        // Confirmación positiva de estar afuera, nunca sospecha.
+        if (r.veredicto === 'afuera') {
+          if (pestana && !pestana.closed) { pestana.close(); }
+          abrirAviso();
+          return;
+        }
+        if (r.veredicto === 'no-se') {
+          console.log('[smd-doc] el navegador no dejó salir el pedido: no pruebo nada, abro el agente igual.');
+        }
+        navegar(pestana);
       });
     });
 

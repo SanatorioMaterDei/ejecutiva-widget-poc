@@ -820,18 +820,14 @@
     });
 
     // ── Botones de agentes ──
-    // Los agentes solo se publican dentro de la red del Sanatorio: antes de
-    // navegar se sondea el portal y, si no responde, se muestra el aviso.
+    // Los agentes solo se sirven dentro de la red del Sanatorio. Desde internet el
+    // dominio resuelve a una IP pública y nginx contesta 403, así que el usuario de
+    // afuera va a chocar contra esa página haga lo que haga el botón: el sondeo existe
+    // para frenarlo antes y mostrarle el aviso en su lugar. Adentro, en cambio, el
+    // botón no tiene nada que hacer: abre la pestaña y navega.
     // IIFE para no chocar con las const de arriba (iframe, close, loaded…).
     (function () {
       var TIMEOUT = 3000;
-      // Un fallo más rápido que esto no es la red: es el navegador rechazando el
-      // pedido por política (Local Network Access, CSP, DNS bloqueado). No alcanza
-      // para afirmar que el portal no responde, así que se navega igual.
-      var PISO_MS = 250;
-      // Plazo para que la Permissions API diga si el permiso de red local está
-      // otorgado. Con el cartel de Chrome abierto la consulta puede no resolver.
-      var PERMISO_MS = 400;
 
       var overlay = document.getElementById('smd-aviso-overlay');
       var cerrar  = document.getElementById('smd-aviso-close');
@@ -870,36 +866,68 @@
         catch (err) { console.warn('[' + log + '] sin acceso a window.top:', err); window.location.href = destino; }
       }
 
-      function sondear(url) {
+      // ── Cómo se decide si el usuario está afuera ────────────────────────────────
+      // El dominio tiene DNS partido: adentro resuelve a 10.1.1.15, una IP privada, y
+      // desde internet a una IP pública cuyo nginx contesta 403. De ahí salen tres
+      // situaciones, y una sola justifica el aviso. Medido en Chromium 148 sobre el
+      // origen real del embed de la intranet:
+      //
+      //   adentro, Chromium (Local Network Access bloquea)  img onerror | fetch RECHAZA  -> navegar
+      //   afuera (el borde público contesta 403)            img onerror | fetch RESUELVE -> AVISO
+      //   adentro, Firefox/Safari (no implementan LNA)      img ONLOAD  | fetch resuelve  -> navegar
+      //
+      // Ninguna señal sola alcanza: img.onerror aparece igual en los dos primeros casos
+      // —76 ms contra 69 ms, así que el tiempo tampoco los separa— y el fetch resuelve
+      // igual en los dos últimos. Juntas sí alcanzan, porque contestan preguntas
+      // distintas: la imagen dice "¿puedo obtener el recurso?" y el fetch dice "¿mi
+      // pedido llegó a algún servidor?". Haber llegado a un servidor y NO haber obtenido
+      // el recurso es la firma de estar afuera.
+      //
+      // NO volver a decidir esto por tiempo. Un 403 del borde público es MÁS rápido que
+      // un rechazo por política, porque es un viaje de ida y vuelta que se completa.
+
+      // ¿Puedo obtener el recurso? Solo onload cuenta como sí.
+      function tengoElRecurso(url) {
         return new Promise(function (resolve) {
-          var t0 = Date.now(), img = new Image(), listo = false;
-          // colgada = venció el TIMEOUT sin que llegara ni onload ni onerror. No es un
-          // error: es silencio, y el silencio también lo produce el cartel de permiso de
-          // red local esperando respuesta.
-          var t = setTimeout(function () { if (!listo) { listo = true; img.src = ''; resolve({ ok:false, colgada:true,  ms:Date.now()-t0 }); } }, TIMEOUT);
-          img.onload  = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:true,  colgada:false, ms:Date.now()-t0 }); } };
-          img.onerror = function () { if (!listo) { listo = true; clearTimeout(t); resolve({ ok:false, colgada:false, ms:Date.now()-t0 }); } };
-          img.src = url + '?t=' + Date.now();
+          var img = new Image(), listo = false;
+          function fin(v) { if (!listo) { listo = true; resolve(v); } }
+          setTimeout(function () { img.src = ''; fin(false); }, TIMEOUT);
+          img.onload  = function () { fin(true); };
+          img.onerror = function () { fin(false); };
+          img.src = url + '?i=' + Date.now();
         });
       }
 
-      // 'granted' | 'prompt' | 'denied' | 'desconocido' | 'sin-respuesta'.
-      // Chrome expone el permiso de Local Network Access en la Permissions API
-      // (verificado en Chromium 148: devuelve 'prompt' antes de que el usuario
-      // conteste). Firefox y Safari no implementan la restricción y la consulta
-      // rechaza: ahí 'desconocido' deja el comportamiento de siempre.
-      function estadoRedLocal() {
+      // ¿El pedido llegó a algún servidor? En modo no-cors la respuesta es opaca y no se
+      // puede leer el status, pero no hace falta: alcanza con que la promesa resuelva,
+      // porque eso ya prueba que el pedido salió y volvió. Si Local Network Access lo
+      // bloquea, el navegador ni lo manda y la promesa rechaza.
+      function llegoAUnServidor(url) {
         return new Promise(function (resolve) {
           var listo = false;
           function fin(v) { if (!listo) { listo = true; resolve(v); } }
-          setTimeout(function () { fin('sin-respuesta'); }, PERMISO_MS);
+          setTimeout(function () { fin(false); }, TIMEOUT);
           try {
-            if (!navigator.permissions || !navigator.permissions.query) { fin('desconocido'); return; }
-            navigator.permissions.query({ name: 'local-network-access' }).then(
-              function (st) { fin(st.state); },
-              function ()   { fin('desconocido'); }
-            );
-          } catch (err) { fin('desconocido'); }
+            fetch(url + '?f=' + Date.now(), { mode: 'no-cors', cache: 'no-store' })
+              .then(function () { fin(true); }, function () { fin(false); });
+          } catch (err) { fin(false); }
+        });
+      }
+
+      // 'adentro' | 'afuera' | 'no-se'
+      function sondear(url) {
+        var t0 = Date.now();
+        return new Promise(function (resolve) {
+          var listo = false;
+          function fin(v) { if (!listo) { listo = true; resolve({ veredicto:v, ms:Date.now()-t0 }); } }
+          var recurso = tengoElRecurso(url), llego = llegoAUnServidor(url);
+          // Si la imagen carga ya está todo dicho y no se espera al fetch: con el cartel
+          // de permiso de red local en pantalla el pedido puede quedar colgado hasta el
+          // TIMEOUT, y no tiene sentido demorar por él una respuesta que ya es concluyente.
+          recurso.then(function (ok) { if (ok) { fin('adentro'); } });
+          Promise.all([recurso, llego]).then(function (v) {
+            fin(v[0] ? 'adentro' : (v[1] ? 'afuera' : 'no-se'));
+          });
         });
       }
 
@@ -929,34 +957,19 @@
           sondear(sonda).then(function (r) {
             boton.removeAttribute('aria-busy');
             rotulo.textContent = etiqueta;
-            console.log('[' + log + '] sonda:', r.ok ? 'portal alcanzable' : 'portal no alcanzable', '(' + r.ms + ' ms)');
-            if (r.ok) { navegar(pestana, destino, log); return; }
-            if (r.ms < PISO_MS) {
-              console.log('[' + log + '] fallo instantáneo: el navegador rechazó el pedido, no concluyo nada. Abro el agente igual.');
-              navegar(pestana, destino, log);
+            console.log('[' + log + '] sonda:', r.veredicto, '(' + r.ms + ' ms)');
+            // Único caso que muestra el aviso: llegamos a un servidor y nos negó el
+            // recurso. Se avisa con confirmación positiva de estar afuera, nunca por
+            // sospecha ni por un fallo que no sabemos interpretar.
+            if (r.veredicto === 'afuera') {
+              if (pestana && !pestana.closed) { pestana.close(); }
+              abrirAviso(boton);
               return;
             }
-            // Silencio hasta el timeout: puede ser el portal que no contesta, pero también
-            // el cartel de permiso de red local sin responder. Medido en Chromium 148: con
-            // el cartel abierto el pedido queda colgado y no llega ni onerror, así que la
-            // sonda vence a los 3000 ms. Esta página corre en GitHub Pages — primer nivel,
-            // origen público —, que es justo el contexto donde eso pasa: antes de este
-            // cambio mostraba el aviso a alguien que estaba adentro de la red o por VPN.
-            if (r.colgada) {
-              estadoRedLocal().then(function (estado) {
-                console.log('[' + log + '] sonda colgada; permiso de red local:', estado);
-                if (estado !== 'granted' && estado !== 'desconocido') {
-                  console.log('[' + log + '] permiso sin resolver: la sonda no prueba nada. Abro el agente igual.');
-                  navegar(pestana, destino, log);
-                  return;
-                }
-                if (pestana && !pestana.closed) pestana.close();
-                abrirAviso(boton);
-              });
-              return;
+            if (r.veredicto === 'no-se') {
+              console.log('[' + log + '] el navegador no dejó salir el pedido: no pruebo nada, abro el agente igual.');
             }
-            if (pestana && !pestana.closed) pestana.close();
-            abrirAviso(boton);
+            navegar(pestana, destino, log);
           });
         });
       });
