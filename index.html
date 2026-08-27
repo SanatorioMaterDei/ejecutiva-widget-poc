@@ -477,7 +477,6 @@
     .smd-agente-btn svg { flex: none; }
     .smd-agente-btn:hover { background: var(--smd-btn-bg-hover); }
     .smd-agente-btn:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
-    .smd-agente-btn[aria-busy="true"] { background: var(--smd-btn-bg-hover); pointer-events: none; }
 
     #smd-aviso-overlay {
       position: fixed;
@@ -820,48 +819,33 @@
     // Los agentes solo se sirven dentro de la red del Sanatorio. Desde internet el
     // dominio resuelve a una IP pública y nginx contesta 403, así que el usuario de
     // afuera va a chocar contra esa página haga lo que haga el botón: el sondeo existe
-    // para frenarlo antes y mostrarle el aviso en su lugar. Adentro, en cambio, el
-    // botón no tiene nada que hacer: abre la pestaña y navega.
+    // para frenarlo antes y mostrarle el aviso en su lugar.
+    //
+    // LA SONDA CORRE AL CARGAR, NO AL CLICKEAR. Antes se sondeaba dentro del click, y
+    // como window.open exige activación por gesto había que pedir la pestaña ANTES de
+    // saber el veredicto; si daba negativo, esa pestaña se abría y se cerraba en la
+    // cara del usuario. Ahora el veredicto ya está tomado cuando llega el click, así
+    // que al de afuera no se le abre nada, y al de adentro lo lleva el <a> nativo con
+    // su target="_blank" y su rel="noopener". Eso saca del código window.open entero,
+    // y con él el bloqueador de popups, el w.opener = null y el fallback por
+    // window.top: un link común no necesita nada de eso.
+    //
+    // Lo que cuesta: se sondea en cada carga aunque nadie clickee. Medido, entre 89 y
+    // 126 ms contra un recurso que el portal ya sirve, así que es despreciable. Una
+    // sola sonda por URL alcanza para todos los botones que compartan data-sonda.
     // IIFE para no chocar con las const de arriba (iframe, close, loaded…).
     (function () {
       var TIMEOUT = 3000;
+      // Cuánto vale un veredicto antes de volver a preguntar. Cubre el caso de alguien
+      // que abre la página sin VPN, la conecta, y recién ahí clickea: sin esto le
+      // mostraríamos el aviso teniendo acceso. Se refresca al apuntar el botón, que da
+      // cientos de ms de ventaja sobre el click.
+      var FRESCURA_MS = 20000;
 
       var overlay = document.getElementById('smd-aviso-overlay');
       var cerrar  = document.getElementById('smd-aviso-close');
       var nombre  = document.getElementById('smd-aviso-agente');
       var ultimo  = null;   // botón que abrió el aviso, para devolverle el foco
-
-      // La pestaña se pide en el mismo click, ANTES de sondear: si se pidiera dentro
-      // del .then() el navegador la bloquearía como popup, porque el gesto del
-      // usuario ya habría caducado. Si la sonda falla, la pestaña se cierra.
-      function abrirPestana(etiqueta) {
-        var w = window.open('', '_blank');
-        if (!w) { return w; }
-        try { w.opener = null; } catch (err) {}
-        // Sin esto la pestaña se queda en about:blank a la vista mientras se sondea.
-        // La barra de direcciones sigue diciendo about:blank hasta que navegamos, pero
-        // el título y el cuerpo ya dicen qué está pasando. Verificado en Chromium 148:
-        // document.write funciona después de anular el opener y el replace() posterior
-        // navega igual.
-        try {
-          w.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8">' +
-            '<title>Abriendo ' + etiqueta + '\u2026</title></head><body style="margin:0;' +
-            'font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#5C5C5C;' +
-            'display:flex;align-items:center;justify-content:center;height:100vh">' +
-            'Abriendo ' + etiqueta + '\u2026</body></html>');
-          w.document.close();
-        } catch (err) {}
-        return w;
-      }
-
-      function navegar(pestana, destino, log) {
-        if (pestana && !pestana.closed) { pestana.location.replace(destino); return; }
-        // Sin pestaña (popup bloqueado): último recurso, window.top. Va por window.top
-        // y no por location a secas porque dentro de un iframe un location común
-        // movería solo el iframe.
-        try { window.top.location.href = destino; }
-        catch (err) { console.warn('[' + log + '] sin acceso a window.top:', err); window.location.href = destino; }
-      }
 
       // ── Cómo se decide si el usuario está afuera ────────────────────────────────
       // El dominio tiene DNS partido: adentro resuelve a 10.1.1.15, una IP privada, y
@@ -928,6 +912,22 @@
         });
       }
 
+      // ── Caché de veredictos, por URL de sonda ──────────────────────────────────
+      var veredictos = {};   // url -> { valor:'adentro'|'afuera'|'no-se', hora:ms }
+      var enCurso    = {};   // url -> true mientras hay una sonda viva
+
+      function refrescar(url, log) {
+        if (enCurso[url]) { return; }
+        var previo = veredictos[url];
+        if (previo && (Date.now() - previo.hora) < FRESCURA_MS) { return; }
+        enCurso[url] = true;
+        sondear(url).then(function (r) {
+          enCurso[url] = false;
+          veredictos[url] = { valor: r.veredicto, hora: Date.now() };
+          console.log('[' + log + '] sonda:', r.veredicto, '(' + r.ms + ' ms)');
+        });
+      }
+
       function abrirAviso(boton) {
         ultimo = boton;
         nombre.textContent = boton.getAttribute('data-agente');
@@ -940,34 +940,28 @@
       }
 
       Array.prototype.forEach.call(document.querySelectorAll('.smd-agente-btn'), function (boton) {
-        var rotulo   = boton.querySelector('.smd-agente-btn-texto');
-        var etiqueta = rotulo.textContent.trim();
-        var destino  = boton.getAttribute('href');
-        var sonda    = boton.getAttribute('data-sonda');
-        var log      = boton.getAttribute('data-log');
+        var sonda = boton.getAttribute('data-sonda');
+        var log   = boton.getAttribute('data-log');
+
+        // Primera sonda al cargar, y refresco cuando el usuario apunta el botón.
+        refrescar(sonda, log);
+        boton.addEventListener('pointerenter', function () { refrescar(sonda, log); });
+        boton.addEventListener('focus', function () { refrescar(sonda, log); });
 
         boton.addEventListener('click', function (e) {
-          e.preventDefault();
-          var pestana = abrirPestana(etiqueta);
-          boton.setAttribute('aria-busy', 'true');
-          rotulo.textContent = 'Verificando…';
-          sondear(sonda).then(function (r) {
-            boton.removeAttribute('aria-busy');
-            rotulo.textContent = etiqueta;
-            console.log('[' + log + '] sonda:', r.veredicto, '(' + r.ms + ' ms)');
-            // Único caso que muestra el aviso: llegamos a un servidor y nos negó el
-            // recurso. Se avisa con confirmación positiva de estar afuera, nunca por
-            // sospecha ni por un fallo que no sabemos interpretar.
-            if (r.veredicto === 'afuera') {
-              if (pestana && !pestana.closed) { pestana.close(); }
-              abrirAviso(boton);
-              return;
-            }
-            if (r.veredicto === 'no-se') {
-              console.log('[' + log + '] el navegador no dejó salir el pedido: no pruebo nada, abro el agente igual.');
-            }
-            navegar(pestana, destino, log);
-          });
+          var v = veredictos[sonda];
+          // Único caso que frena el click: confirmación positiva de estar afuera. Ante
+          // cualquier otra cosa —veredicto no concluyente, o sonda todavía sin
+          // terminar— no se toca nada y el <a> navega solo. El de adentro nunca sale
+          // perjudicado; el de afuera que clickee en los primeros milisegundos cae en
+          // el 403, igual que antes de todo esto.
+          if (v && v.valor === 'afuera') {
+            e.preventDefault();
+            console.log('[' + log + '] afuera: freno el click, no abro pestaña.');
+            abrirAviso(boton);
+            return;
+          }
+          if (!v) { console.log('[' + log + '] sonda sin terminar: dejo pasar el click.'); }
         });
       });
 
