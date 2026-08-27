@@ -31,9 +31,13 @@
   button[aria-pressed="true"] { background:var(--azul); color:#fff; border-color:var(--azul); }
   button:focus-visible { outline:3px solid var(--claro); outline-offset:2px; }
   #recargar { margin-left:auto; background:var(--azul); color:#fff; border-color:var(--azul); }
-  .escenario { background:#EEF3F9; border:1px dashed var(--linea); border-radius:5px;
+  /* Fondo de color a propósito: si el embed fuera opaco se vería un rectángulo
+     blanco recortado. Que no se vea es la prueba de que el fondo es transparente. */
+  .escenario { background:#DCE7F3; border:1px dashed var(--linea); border-radius:5px;
                padding:22px; display:flex; justify-content:center; align-items:center; min-height:300px; }
-  #marco { border:1px solid #bbb; background:#fff; display:block; }
+  #marco { border:0; background:transparent; display:block; }
+  #marco.con-borde { outline:1px dashed #8A5B12; outline-offset:0; }
+  .opcion { display:flex; align-items:center; gap:7px; margin:.9rem 0 0; font-size:.88rem; color:var(--gris); }
   .medida-actual { font:500 .78rem/1 ui-monospace,monospace; color:var(--gris); letter-spacing:.06em; }
   table { width:100%; border-collapse:collapse; font-size:.92rem; }
   td { padding:.55rem .8rem .55rem 0; border-bottom:1px solid #EEF3F9; vertical-align:top; }
@@ -65,6 +69,10 @@
       <button type="button" id="recargar">Recargar el recuadro</button>
     </div>
     <p style="margin:.8rem 0 0"><span class="medida-actual" id="actual"></span></p>
+    <label class="opcion">
+      <input type="checkbox" id="borde"> Marcar el borde del recuadro
+      <span style="opacity:.75">— sirve para ver hasta dónde llega el embed cuando se prueba el aviso</span>
+    </label>
   </div>
 
   <div class="escenario">
@@ -122,6 +130,9 @@
     });
     document.getElementById('recargar').addEventListener('click', function () {
       marco.src = marco.src.split('?')[0] + '?r=' + Date.now();
+    });
+    document.getElementById('borde').addEventListener('change', function () {
+      marco.classList.toggle('con-borde', this.checked);
     });
     poner(230, 84, botones[0]);
   })();
