@@ -37,9 +37,12 @@
   4. Publicar y probar con un clic. La consola imprime líneas [smd-doc] con lo
      que el botón decidió y cuántos ms tardó.
 
-  NO HACE FALTA
-  Ni librerías, ni build, ni conexión a ningún servicio externo. Todo está
-  namespaceado con el prefijo smd-doc- para no chocar con la página que lo aloje.
+  DEPENDENCIAS
+  Ni librerías ni build. La única dependencia externa es la imagen del icono, que
+  se carga desde la URL de ICONO — ver la advertencia en el bloque AJUSTES. Si esa
+  imagen no cargara, el acceso sigue funcionando: se ve el recuadro sin imagen y el
+  click hace lo mismo. Todo está namespaceado con el prefijo smd-doc- para no
+  chocar con la página que lo aloje.
 
   COLORES INSTITUCIONALES (según "Colores permitidos - Web")
   - P295C   #002856  azul institucional, color principal.
@@ -152,7 +155,10 @@
     #smd-doc-btn.smd-sin-icono:hover { background:var(--smd-azul-hover); transform:none; }
     #smd-doc-btn.smd-sin-icono svg { flex:none; }
     #smd-doc-rotulo { font-size:14px; font-weight:600; text-align:center; line-height:1.25; }
-    #smd-doc-btn:not(.smd-sin-icono) #smd-doc-svg { display:none; }
+    /* Con icono no se dibujan ni el símbolo ni el rótulo: la imagen ya trae el
+       nombre. El texto sigue existiendo en el DOM como nombre accesible. */
+    #smd-doc-btn:not(.smd-sin-icono) #smd-doc-svg,
+    #smd-doc-btn:not(.smd-sin-icono) #smd-doc-rotulo { display:none; }
 
     /* ── El aviso ──────────────────────────────────────────────────
        Es el modal de siempre: scrim, tarjeta y una sola acción. La diferencia
@@ -252,8 +258,8 @@
       <div id="smd-doc-texto">
         <h2 id="smd-doc-title">Recurso exclusivo de la red del Sanatorio</h2>
         <p id="smd-doc-base">
-          El Asistente de Documentos Institucionales solo est&aacute; disponible desde la red
-          del Sanatorio, por wifi institucional o conectado por VPN.
+          Qualy, el asistente de Documentos Institucionales, solo est&aacute; disponible
+          desde la red del Sanatorio, por wifi institucional o conectado por VPN.
         </p>
         <p id="smd-doc-extra">
           Volv&eacute; a intentarlo desde una computadora del Sanatorio.
@@ -270,9 +276,16 @@
   // Lo único que hay que tocar al instalar. Ver el encabezado del archivo.
 
   // URL de la imagen del icono. Vacío = botón de texto institucional.
-  var ICONO     = '';
-  // Texto del botón y alt de la imagen.
-  var ETIQUETA  = 'Documentos Institucionales';
+  // OJO: esta URL es de un CDN de Mailjet, pensado para imágenes de campañas de
+  // correo, no para ser un asset de producción. Conviene que Marketing suba el
+  // icono a los archivos multimedia de Wix y reemplace esta URL por la de ahí:
+  // queda en el mismo CDN que el resto del sitio y deja de depender de una cuenta
+  // ajena que puede rotar o vencer el enlace.
+  var ICONO     = 'https://x0v9k.mjt.lu/img2/x0v9k/8a246767-c799-4443-85ba-6a8070266e4c/content?updatedAt=1787751067000';
+  // Nombre accesible del acceso: lo que anuncian los lectores de pantalla y el alt
+  // de la imagen. Con icono no se dibuja como texto, porque la imagen ya trae el
+  // nombre adentro y repetirlo sería redundante.
+  var ETIQUETA  = 'Qualy, el asistente de Documentos Institucionales';
   // Opcional: página institucional que explique que el recurso es interno.
   // Si se completa, al usuario de internet se lo lleva ahí en vez de mostrarle
   // el cartelito de este mismo recuadro.
