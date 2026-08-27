@@ -1,0 +1,428 @@
+<!--
+  ============================================================================
+  Botón "Documentos Institucionales" — para la intranet
+  Sanatorio Mater Dei
+  ============================================================================
+
+  QUÉ ES
+  Un acceso al Asistente de Documentos Institucionales. El agente solo se sirve
+  dentro de la red del Sanatorio; desde internet el dominio resuelve a una IP
+  pública y nginx contesta 403. El botón detecta ese caso y, en vez de dejar que
+  la persona aterrice en una página de error, la frena antes y le explica que el
+  recurso es interno.
+
+  ============================================================================
+  PARA QUIEN LO INSTALA EN WIX — SOLO HAY QUE TOCAR ESTAS 3 COSAS
+  ============================================================================
+  Están todas juntas en el bloque "AJUSTES" del <script>, abajo de todo.
+
+  1. ICONO   — la URL de la imagen del icono. Si se deja vacío, se dibuja un
+               botón de texto con los colores institucionales, que sirve igual.
+  2. ETIQUETA— el texto del botón y el alt de la imagen. Ya viene puesto.
+  3. AVISO_URL — opcional. Si más adelante existe una página institucional que
+               diga "este recurso es solo de la red interna", poner acá su URL:
+               el botón lleva ahí al usuario de internet en vez de mostrarle el
+               cartelito chico. Vacío = cartelito dentro del mismo recuadro.
+
+  CÓMO SE INSTALA
+  1. Editor de Wix -> Agregar (+) -> Incrustar código -> HTML incrustado.
+  2. Elegir "Código" y pegar TODO este archivo tal cual.
+     (Wix descarta este comentario al publicar; es normal, la documentación de
+      verdad vive en el repositorio del proyecto.)
+  3. Darle al recuadro el tamaño que convenga al diseño de la página. El botón y
+     el aviso se adaptan solos: el aviso se mide en vh/vw, que dentro de un
+     iframe se refieren a ese recuadro, así que entra sea cual sea la medida. En
+     recuadros muy bajos se oculta el símbolo del candado y, si aun así no
+     entrara, la tarjeta scrollea. Nunca queda cortado.
+  4. Publicar y probar con un clic. La consola imprime líneas [smd-doc] con lo
+     que el botón decidió y cuántos ms tardó.
+
+  NO HACE FALTA
+  Ni librerías, ni build, ni conexión a ningún servicio externo. Todo está
+  namespaceado con el prefijo smd-doc- para no chocar con la página que lo aloje.
+
+  COLORES INSTITUCIONALES (según "Colores permitidos - Web")
+  - P295C   #002856  azul institucional, color principal.
+  - P283C   #92C0E9  azul claro, para foco y detalles.
+  - P2707C  #C2D5ED  azul muy claro, para fondos suaves.
+  - Gris #5C5C5C para texto secundario.
+  Las variables --smd-* de abajo son el único lugar donde hay que tocar si el
+  manual de marca cambia.
+
+  ============================================================================
+  CÓMO DECIDE SI EL USUARIO ESTÁ AFUERA
+  ============================================================================
+  El dominio tiene DNS partido: adentro resuelve a 10.1.1.15, una IP privada, y
+  desde internet a una IP pública cuyo nginx contesta 403. De ahí salen tres
+  situaciones y una sola justifica el aviso. Medido en Chromium 148 sobre el
+  origen real del embed de la intranet:
+
+    adentro, Chromium (Local Network Access bloquea)  img onerror | fetch RECHAZA  -> entrar
+    afuera (el borde público contesta 403)            img onerror | fetch RESUELVE -> AVISO
+    adentro, Firefox/Safari (no implementan LNA)      img ONLOAD  | fetch resuelve  -> entrar
+
+  Ninguna señal sola alcanza: img.onerror aparece igual en los dos primeros
+  casos —76 ms contra 69 ms, así que el tiempo tampoco los separa— y el fetch
+  resuelve igual en los dos últimos. Juntas sí, porque contestan preguntas
+  distintas: la imagen dice "¿puedo obtener el recurso?" y el fetch dice "¿mi
+  pedido llegó a algún servidor?". Haber llegado a un servidor y NO haber
+  obtenido el recurso es la firma de estar afuera.
+
+  Se avisa SOLO con confirmación positiva de estar afuera. Ante cualquier otra
+  cosa se entra igual: es preferible que alguien de afuera vea el 403 a que
+  alguien de adentro se quede sin poder entrar.
+
+  NO VOLVER A DECIDIR ESTO POR TIEMPO. Un 403 del borde público es MÁS rápido
+  que un rechazo por política, porque es un viaje de ida y vuelta que se
+  completa. Ese error ya se cometió una vez y dejó al usuario de internet
+  aterrizando en la página de error de nginx.
+
+  ============================================================================
+  POR QUÉ LA SONDA NO CORRE EN EL CLICK
+  ============================================================================
+  Antes sí, y traía dos problemas. Como window.open exige activación por gesto,
+  había que pedir la pestaña ANTES de conocer el veredicto: si daba negativo,
+  esa pestaña se abría y se cerraba en la cara del usuario. Y además el click
+  quedaba esperando a la sonda.
+
+  Ahora el veredicto ya está tomado cuando llega el click. Al de afuera no se le
+  abre nada; al de adentro lo lleva el <a> nativo con su target="_blank" y su
+  rel="noopener". Eso saca del código window.open entero, y con él el bloqueador
+  de popups, el w.opener = null y el fallback por window.top.
+
+  CUÁNDO SE SONDEA DEPENDE DEL CONTEXTO, y la razón es una asimetría que conviene
+  tener presente: el cartel de permiso de red local SOLO lo ve el usuario de
+  adentro. Al de internet el destino le resuelve a una IP pública, Local Network
+  Access ni interviene y su sonda vuelve en ~100 ms sin preguntar nada. O sea que
+  el costo del cartel cae entero sobre quien no obtiene ningún beneficio.
+
+    - En un iframe de otro origen —que es como corre esto dentro de Wix— el
+      permiso no está delegado y el navegador ni puede preguntar: deniega solo en
+      ~126 ms. Ahí se sondea al cargar y el veredicto está listo siempre.
+    - Como página de primer nivel el navegador SÍ puede preguntar, y sondear al
+      cargar hace saltar el cartel sin que el usuario haya tocado nada. Ahí se
+      espera a que muestre intención: apuntar, enfocar o empezar a tocar.
+
+  El contexto se detecta con window.top ilegible.
+
+  ============================================================================
+  DÓNDE TOCAR QUÉ
+  ============================================================================
+  Etiqueta del botón ......... ETIQUETA, en AJUSTES
+  Icono ...................... ICONO, en AJUSTES
+  Texto del aviso ............ bloque #smd-doc-modal, en el HTML
+  Página de aviso ............ AVISO_URL, en AJUSTES
+  Colores .................... variables --smd-* de #smd-doc-root
+  URL del agente ............. AGENTE, en AJUSTES, Y el href del <a> (las dos)
+-->
+
+<div id="smd-doc-root">
+  <style>
+    #smd-doc-root {
+      /* Paleta institucional — ver encabezado */
+      --smd-azul:#002856;        /* P295C  */
+      --smd-azul-hover:#1A3E67;  /* tinte de P295C */
+      --smd-azul-claro:#92C0E9;  /* P283C  */
+      --smd-azul-suave:#C2D5ED;  /* P2707C */
+      --smd-gris:#5C5C5C;        /* escala de grises */
+      font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      position:relative;
+      display:flex; align-items:center; justify-content:center;
+      width:100%; height:100%; box-sizing:border-box; padding:4px;
+    }
+    #smd-doc-root * { box-sizing:border-box; }
+
+    /* ── El acceso ─────────────────────────────────────────────── */
+    #smd-doc-btn {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:8px; width:100%; height:100%; padding:8px;
+      text-decoration:none; color:var(--smd-azul);
+      border-radius:8px; transition:transform .12s ease, background .12s ease;
+    }
+    #smd-doc-btn:hover { background:rgba(0,40,86,.05); transform:translateY(-1px); }
+    #smd-doc-btn:focus-visible { outline:3px solid var(--smd-azul-claro); outline-offset:2px; }
+    #smd-doc-img { max-width:100%; max-height:100%; flex:1 1 auto; object-fit:contain; }
+
+    /* Botón de texto: lo que se ve si no se configuró un icono. */
+    #smd-doc-btn.smd-sin-icono {
+      flex-direction:row; gap:10px; height:auto; padding:14px 24px;
+      background:var(--smd-azul); color:#fff; border-radius:6px;
+      font-size:15px; font-weight:600; letter-spacing:.01em;
+    }
+    #smd-doc-btn.smd-sin-icono:hover { background:var(--smd-azul-hover); transform:none; }
+    #smd-doc-btn.smd-sin-icono svg { flex:none; }
+    #smd-doc-rotulo { font-size:14px; font-weight:600; text-align:center; line-height:1.25; }
+    #smd-doc-btn:not(.smd-sin-icono) #smd-doc-svg { display:none; }
+
+    /* ── El aviso ──────────────────────────────────────────────────
+       Es el modal de siempre: scrim, tarjeta y una sola acción. La diferencia
+       es que se mide en vh/vw, que dentro de un iframe se refieren al recuadro
+       del embed. Así se adapta al tamaño que le den, sin que nosotros tengamos
+       que pedir medidas. Si aun así no entra, la tarjeta scrollea.
+       Se usa position:absolute y no fixed: adentro de un iframe dan lo mismo,
+       pero absolute no depende de cómo el navegador trate el viewport. */
+    #smd-doc-overlay {
+      position:absolute; inset:0; background:rgba(0,40,86,.55);
+      display:none; align-items:center; justify-content:center;
+      padding:clamp(4px, 3vh, 20px); z-index:99999;
+    }
+    #smd-doc-overlay.smd-open { display:flex; }
+    /* Columna: el texto es lo único que cede espacio y scrollea. El símbolo y
+       la acción no se encogen, así que "Entendido" queda SIEMPRE a la vista por
+       chico que sea el recuadro. Esconder la única acción no es una opción. */
+    #smd-doc-modal {
+      background:#fff; border-radius:8px; border-top:5px solid var(--smd-azul);
+      padding:clamp(8px, 3.5vh, 30px) clamp(10px, 5vw, 28px);
+      max-width:440px; width:100%; max-height:100%;
+      box-shadow:0 10px 34px rgba(0,40,86,.28); text-align:center;
+      display:flex; flex-direction:column; min-height:0;
+    }
+    #smd-doc-texto { flex:0 1 auto; min-height:0; overflow-y:auto; scrollbar-width:thin; overscroll-behavior:contain; }
+    #smd-doc-simbolo {
+      flex:none;
+      width:clamp(28px, 11vh, 52px); height:clamp(28px, 11vh, 52px);
+      margin:0 auto clamp(6px, 2.5vh, 16px); border-radius:50%;
+      background:var(--smd-azul-suave); color:var(--smd-azul);
+      display:flex; align-items:center; justify-content:center; flex:none;
+    }
+    #smd-doc-simbolo svg { width:60%; height:60%; }
+    #smd-doc-modal h2 {
+      margin:0 0 clamp(4px, 1.6vh, 11px);
+      font-size:clamp(12px, 3.6vh, 18px); line-height:1.3;
+      font-weight:700; color:var(--smd-azul);
+    }
+    #smd-doc-modal p {
+      margin:0 0 clamp(5px, 1.6vh, 10px);
+      font-size:clamp(10.5px, 2.7vh, 14px); line-height:1.45; color:var(--smd-gris);
+    }
+    #smd-doc-modal p:last-child { margin-bottom:0; }
+    #smd-doc-texto { margin-bottom:clamp(7px, 2.4vh, 18px); }
+    #smd-doc-close {
+      flex:none; align-self:center;
+      padding:clamp(5px, 1.6vh, 12px) clamp(14px, 6vw, 32px);
+      border:none; border-radius:5px;
+      background:var(--smd-azul); color:#fff; font-family:inherit;
+      font-size:clamp(11px, 2.6vh, 14px); font-weight:600; cursor:pointer;
+      transition:background .15s ease;
+    }
+    #smd-doc-close:hover { background:var(--smd-azul-hover); }
+    #smd-doc-close:focus-visible { outline:3px solid var(--smd-azul-claro); outline-offset:2px; }
+
+    /* Cuanto más bajo el recuadro, menos texto entra. Se va cediendo por orden
+       de importancia: primero el símbolo, después la frase de detalle, y en el
+       extremo queda el título con la acción — que es el mensaje irreducible. */
+    @media (max-height: 230px) { #smd-doc-simbolo { display:none; } }
+    @media (max-height: 260px) { #smd-doc-extra   { display:none; } }
+    @media (max-height: 150px) {
+      #smd-doc-base { display:none; }
+      #smd-doc-overlay { padding:3px; }
+      #smd-doc-modal { border-top-width:3px; border-radius:6px; padding:6px 8px; }
+      #smd-doc-modal h2 { font-size:11px; line-height:1.22; margin-bottom:5px; }
+      #smd-doc-texto { margin-bottom:5px; }
+      #smd-doc-close { padding:4px 14px; font-size:11px; }
+    }
+  </style>
+
+  <!-- El href real es el camino sin JS: si el script no corriera, el link
+       igual funciona. Tiene que coincidir con AGENTE. -->
+  <a id="smd-doc-btn"
+     href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales"
+     target="_blank" rel="noopener">
+    <img id="smd-doc-img" alt="" hidden>
+    <svg id="smd-doc-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>
+    </svg>
+    <span id="smd-doc-rotulo">Documentos Institucionales</span>
+  </a>
+
+  <!-- El aviso, para cuando se confirma que el usuario está afuera. Una sola
+       acción, "Entendido": la opción de "Intentar de todos modos" existió y se
+       quitó a pedido; no reintroducirla sin que la pidan. -->
+  <div id="smd-doc-overlay" role="dialog" aria-modal="true" aria-labelledby="smd-doc-title">
+    <div id="smd-doc-modal">
+      <div id="smd-doc-simbolo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <div id="smd-doc-texto">
+        <h2 id="smd-doc-title">Recurso exclusivo de la red del Sanatorio</h2>
+        <p id="smd-doc-base">
+          El Asistente de Documentos Institucionales solo est&aacute; disponible desde la red
+          del Sanatorio, por wifi institucional o conectado por VPN.
+        </p>
+        <p id="smd-doc-extra">
+          Volv&eacute; a intentarlo desde una computadora del Sanatorio.
+        </p>
+      </div>
+      <button id="smd-doc-close" type="button">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ══ AJUSTES ══════════════════════════════════════════════════════════════
+  // Lo único que hay que tocar al instalar. Ver el encabezado del archivo.
+
+  // URL de la imagen del icono. Vacío = botón de texto institucional.
+  var ICONO     = '';
+  // Texto del botón y alt de la imagen.
+  var ETIQUETA  = 'Documentos Institucionales';
+  // Opcional: página institucional que explique que el recurso es interno.
+  // Si se completa, al usuario de internet se lo lleva ahí en vez de mostrarle
+  // el cartelito de este mismo recuadro.
+  var AVISO_URL = '';
+
+  // A dónde lleva el botón. Si cambia, cambiar también el href del <a> de arriba.
+  var AGENTE = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales';
+  // Recurso que el portal sirve solo a la red interna. NO usar favicon.png:
+  // está expuesto a internet y daría "disponible" siempre.
+  var SONDA   = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png';
+  var TIMEOUT = 3000;
+  // Cuánto vale un veredicto antes de volver a preguntar. Cubre a quien abre la
+  // página sin VPN, la conecta, y recién ahí clickea: sin esto le mostraríamos el
+  // aviso teniendo acceso, que es el más caro de los dos errores posibles.
+  var FRESCURA_MS = 20000;
+  // ═════════════════════════════════════════════════════════════════════════
+
+  var raiz   = document.getElementById('smd-doc-root');
+  var boton  = document.getElementById('smd-doc-btn');
+  var imagen = document.getElementById('smd-doc-img');
+  var rotulo = document.getElementById('smd-doc-rotulo');
+  var overlay = document.getElementById('smd-doc-overlay');
+  var cerrar  = document.getElementById('smd-doc-close');
+
+  // ── Presentación ───────────────────────────────────────────────────────────
+  rotulo.textContent = ETIQUETA;
+  boton.setAttribute('aria-label', ETIQUETA);
+  if (ICONO) {
+    imagen.src = ICONO;
+    imagen.alt = ETIQUETA;
+    imagen.hidden = false;
+  } else {
+    boton.className = 'smd-sin-icono';
+  }
+
+  // ── ¿Puede el navegador mostrar el cartel de permiso acá? ──────────────────
+  // Dentro de un iframe de otro origen no, porque el permiso no está delegado.
+  // window.top ilegible es la forma de saber que estamos en uno.
+  function elCartelEsPosible() {
+    if (window.top === window.self) { return true; }
+    try { void window.top.location.href; return true; }
+    catch (err) { return false; }
+  }
+  var CARTEL_POSIBLE = elCartelEsPosible();
+
+  // ── Las dos señales ────────────────────────────────────────────────────────
+  // ¿Puedo obtener el recurso? Solo onload cuenta como sí.
+  function tengoElRecurso() {
+    return new Promise(function (resolve) {
+      var img = new Image(), listo = false;
+      function fin(v) { if (!listo) { listo = true; resolve(v); } }
+      setTimeout(function () { img.src = ''; fin(false); }, TIMEOUT);
+      img.onload  = function () { fin(true); };
+      img.onerror = function () { fin(false); };
+      img.src = SONDA + '?i=' + Date.now();
+    });
+  }
+
+  // ¿El pedido llegó a algún servidor? En modo no-cors la respuesta es opaca y
+  // no se puede leer el status, pero no hace falta: alcanza con que la promesa
+  // resuelva, porque eso ya prueba que salió y volvió. Si Local Network Access
+  // lo bloquea, el navegador ni lo manda y la promesa rechaza.
+  function llegoAUnServidor() {
+    return new Promise(function (resolve) {
+      var listo = false;
+      function fin(v) { if (!listo) { listo = true; resolve(v); } }
+      setTimeout(function () { fin(false); }, TIMEOUT);
+      try {
+        fetch(SONDA + '?f=' + Date.now(), { mode: 'no-cors', cache: 'no-store' })
+          .then(function () { fin(true); }, function () { fin(false); });
+      } catch (err) { fin(false); }
+    });
+  }
+
+  // 'adentro' | 'afuera' | 'no-se'
+  function sondear() {
+    var t0 = Date.now();
+    return new Promise(function (resolve) {
+      var listo = false;
+      function fin(v) { if (!listo) { listo = true; resolve({ veredicto:v, ms:Date.now()-t0 }); } }
+      var recurso = tengoElRecurso(), llego = llegoAUnServidor();
+      // Si la imagen carga ya está todo dicho y no se espera al fetch: con el
+      // cartel de permiso en pantalla el pedido puede quedar colgado hasta el
+      // TIMEOUT, y no tiene sentido demorar una respuesta que ya es concluyente.
+      recurso.then(function (ok) { if (ok) { fin('adentro'); } });
+      Promise.all([recurso, llego]).then(function (v) {
+        fin(v[0] ? 'adentro' : (v[1] ? 'afuera' : 'no-se'));
+      });
+    });
+  }
+
+  // ── Veredicto cacheado ─────────────────────────────────────────────────────
+  var veredicto = null;   // { valor, hora }
+  var enCurso   = false;
+
+  function refrescar() {
+    if (enCurso) { return; }
+    if (veredicto && (Date.now() - veredicto.hora) < FRESCURA_MS) { return; }
+    enCurso = true;
+    sondear().then(function (r) {
+      enCurso = false;
+      veredicto = { valor: r.veredicto, hora: Date.now() };
+      console.log('[smd-doc] sonda:', r.veredicto, '(' + r.ms + ' ms)');
+    });
+  }
+
+  // ── Abrir y cerrar el aviso ────────────────────────────────────────────────
+  function abrirAviso() {
+    overlay.classList.add('smd-open');
+    cerrar.focus();
+  }
+  function cerrarAviso() {
+    overlay.classList.remove('smd-open');
+    boton.focus();
+  }
+  cerrar.addEventListener('click', cerrarAviso);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) { cerrarAviso(); } });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('smd-open')) { cerrarAviso(); }
+  });
+
+  // ── Cuándo sondear ─────────────────────────────────────────────────────────
+  // Donde el cartel no puede aparecer se sondea ya; donde sí puede, se espera a
+  // que el usuario muestre intención. Las cuatro señales cubren mouse, teclado y
+  // touch, y refrescar() se encarga de no repetir el pedido.
+  if (!CARTEL_POSIBLE) { refrescar(); }
+  var INTENCION = ['pointerenter', 'pointerdown', 'focus', 'touchstart'];
+  for (var i = 0; i < INTENCION.length; i++) {
+    boton.addEventListener(INTENCION[i], refrescar);
+  }
+
+  // ── El click ───────────────────────────────────────────────────────────────
+  boton.addEventListener('click', function (e) {
+    // Único caso que frena el click: confirmación positiva de estar afuera. Ante
+    // cualquier otra cosa —veredicto no concluyente, o sonda todavía sin
+    // terminar— no se toca nada y el <a> navega solo.
+    if (veredicto && veredicto.valor === 'afuera') {
+      if (AVISO_URL) {
+        // Hay página de aviso: se deja que el <a> navegue, pero hacia ella.
+        boton.setAttribute('href', AVISO_URL);
+        console.log('[smd-doc] afuera: llevo a la página de aviso.');
+        return;
+      }
+      e.preventDefault();
+      console.log('[smd-doc] afuera: freno el click, no abro pestaña.');
+      abrirAviso();
+      return;
+    }
+    boton.setAttribute('href', AGENTE);
+    if (!veredicto) { console.log('[smd-doc] sonda sin terminar: dejo pasar el click.'); }
+  });
+})();
+</script>
