@@ -821,18 +821,35 @@
     // afuera va a chocar contra esa página haga lo que haga el botón: el sondeo existe
     // para frenarlo antes y mostrarle el aviso en su lugar.
     //
-    // LA SONDA CORRE AL CARGAR, NO AL CLICKEAR. Antes se sondeaba dentro del click, y
-    // como window.open exige activación por gesto había que pedir la pestaña ANTES de
-    // saber el veredicto; si daba negativo, esa pestaña se abría y se cerraba en la
-    // cara del usuario. Ahora el veredicto ya está tomado cuando llega el click, así
-    // que al de afuera no se le abre nada, y al de adentro lo lleva el <a> nativo con
-    // su target="_blank" y su rel="noopener". Eso saca del código window.open entero,
-    // y con él el bloqueador de popups, el w.opener = null y el fallback por
-    // window.top: un link común no necesita nada de eso.
+    // LA SONDA NO CORRE EN EL CLICK. Antes sí, y como window.open exige activación por
+    // gesto había que pedir la pestaña ANTES de saber el veredicto; si daba negativo,
+    // esa pestaña se abría y se cerraba en la cara del usuario. Ahora el veredicto ya
+    // está tomado cuando llega el click, así que al de afuera no se le abre nada, y al
+    // de adentro lo lleva el <a> nativo con su target="_blank" y su rel="noopener".
+    // Eso saca del código window.open entero, y con él el bloqueador de popups, el
+    // w.opener = null y el fallback por window.top: un link común no necesita nada.
     //
-    // Lo que cuesta: se sondea en cada carga aunque nadie clickee. Medido, entre 89 y
-    // 126 ms contra un recurso que el portal ya sirve, así que es despreciable. Una
-    // sola sonda por URL alcanza para todos los botones que compartan data-sonda.
+    // CUÁNDO SE SONDEA DEPENDE DEL CONTEXTO, y la razón es una asimetría que conviene
+    // tener presente: el cartel de permiso de red local SOLO lo ve el usuario de
+    // adentro. Al de internet el destino le resuelve a una IP pública, Local Network
+    // Access ni interviene y su sonda vuelve en ~100 ms sin preguntar nada. O sea que
+    // el costo del cartel cae entero sobre quien no obtiene ningún beneficio de la
+    // detección. Por eso:
+    //
+    //   - En un iframe de otro origen (el embed de Wix, o sea PRODUCCIÓN) el permiso no
+    //     está delegado y el navegador ni puede preguntar: deniega solo en ~126 ms.
+    //     Ahí sondear al cargar sale gratis y el veredicto está listo siempre.
+    //   - En primer nivel (este POC, o un futuro con Velo) el navegador SÍ puede
+    //     preguntar. Sondear al cargar hace aparecer el cartel sin que el usuario haya
+    //     tocado nada — verificado en Opera con perfil limpio, aparece apenas entrás.
+    //     Ahí se espera a que muestre intención: apuntar, enfocar o empezar a tocar el
+    //     botón. Entre eso y el click hay cientos de ms, de sobra para una sonda de 35
+    //     a 160 ms, y si el cartel aparece queda atado a un elemento que el usuario
+    //     está señalando, que es mucho más explicable que uno que salta solo.
+    //
+    // Una sola sonda por URL alcanza para todos los botones que compartan data-sonda.
+    // El TIMEOUT ya no lo sufre nadie: la sonda corre en segundo plano y el click nunca
+    // la espera, así que un cartel sin contestar no traba a nadie.
     // IIFE para no chocar con las const de arriba (iframe, close, loaded…).
     (function () {
       var TIMEOUT = 3000;
@@ -912,6 +929,16 @@
         });
       }
 
+      // ¿Puede el navegador llegar a mostrar el cartel de permiso acá? Dentro de un
+      // iframe de otro origen no, porque el permiso no está delegado. window.top
+      // ilegible es la forma de saber que estamos en uno.
+      function elCartelEsPosible() {
+        if (window.top === window.self) { return true; }
+        try { void window.top.location.href; return true; }
+        catch (err) { return false; }
+      }
+      var CARTEL_POSIBLE = elCartelEsPosible();
+
       // ── Caché de veredictos, por URL de sonda ──────────────────────────────────
       var veredictos = {};   // url -> { valor:'adentro'|'afuera'|'no-se', hora:ms }
       var enCurso    = {};   // url -> true mientras hay una sonda viva
@@ -943,10 +970,14 @@
         var sonda = boton.getAttribute('data-sonda');
         var log   = boton.getAttribute('data-log');
 
-        // Primera sonda al cargar, y refresco cuando el usuario apunta el botón.
-        refrescar(sonda, log);
-        boton.addEventListener('pointerenter', function () { refrescar(sonda, log); });
-        boton.addEventListener('focus', function () { refrescar(sonda, log); });
+        // Donde el cartel no puede aparecer, se sondea ya. Donde sí puede, se espera a
+        // que el usuario muestre intención. Las cuatro señales cubren mouse, teclado y
+        // touch; refrescar() se encarga de no repetir el pedido.
+        if (!CARTEL_POSIBLE) { refrescar(sonda, log); }
+        var INTENCION = ['pointerenter', 'pointerdown', 'focus', 'touchstart'];
+        for (var i = 0; i < INTENCION.length; i++) {
+          boton.addEventListener(INTENCION[i], function () { refrescar(sonda, log); });
+        }
 
         boton.addEventListener('click', function (e) {
           var v = veredictos[sonda];
