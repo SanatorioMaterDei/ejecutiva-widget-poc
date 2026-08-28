@@ -380,14 +380,15 @@
   var CARTEL_POSIBLE = elCartelEsPosible();
 
   // ── Las dos señales ────────────────────────────────────────────────────────
-  // ¿Puedo obtener el recurso? Solo onload cuenta como sí.
+  // ¿Puedo obtener el recurso? 'carga' | 'falla' | 'timeout'.
+  // Distinguir el fallo rápido del cuelgue importa: significan cosas opuestas.
   function tengoElRecurso() {
     return new Promise(function (resolve) {
       var img = new Image(), listo = false;
       function fin(v) { if (!listo) { listo = true; resolve(v); } }
-      setTimeout(function () { img.src = ''; fin(false); }, TIMEOUT);
-      img.onload  = function () { fin(true); };
-      img.onerror = function () { fin(false); };
+      setTimeout(function () { img.src = ''; fin('timeout'); }, TIMEOUT);
+      img.onload  = function () { fin('carga'); };
+      img.onerror = function () { fin('falla'); };
       img.src = SONDA + '?i=' + Date.now();
     });
   }
@@ -396,15 +397,16 @@
   // no se puede leer el status, pero no hace falta: alcanza con que la promesa
   // resuelva, porque eso ya prueba que salió y volvió. Si Local Network Access
   // lo bloquea, el navegador ni lo manda y la promesa rechaza.
+  // 'resuelve' | 'rechaza' | 'timeout'.
   function llegoAUnServidor() {
     return new Promise(function (resolve) {
       var listo = false;
       function fin(v) { if (!listo) { listo = true; resolve(v); } }
-      setTimeout(function () { fin(false); }, TIMEOUT);
+      setTimeout(function () { fin('timeout'); }, TIMEOUT);
       try {
         fetch(SONDA + '?f=' + Date.now(), { mode: 'no-cors', cache: 'no-store' })
-          .then(function () { fin(true); }, function () { fin(false); });
-      } catch (err) { fin(false); }
+          .then(function () { fin('resuelve'); }, function () { fin('rechaza'); });
+      } catch (err) { fin('rechaza'); }
     });
   }
 
@@ -423,14 +425,25 @@
         }
       }
       var recurso = tengoElRecurso(), llego = llegoAUnServidor();
-      recurso.then(function (ok) { det.img   = ok ? 'carga' : 'falla'; });
-      llego.then(function (ok)   { det.fetch = ok ? 'resuelve' : 'rechaza'; });
+      recurso.then(function (v) { det.img   = v; });
+      llego.then(function (v)   { det.fetch = v; });
       // Si la imagen carga ya está todo dicho y no se espera al fetch: con el
       // cartel de permiso en pantalla el pedido puede quedar colgado hasta el
       // TIMEOUT, y no tiene sentido demorar una respuesta que ya es concluyente.
-      recurso.then(function (ok) { if (ok) { fin('adentro'); } });
+      recurso.then(function (v) { if (v === 'carga') { fin('adentro'); } });
       Promise.all([recurso, llego]).then(function (v) {
-        fin(v[0] ? 'adentro' : (v[1] ? 'afuera' : 'no-se'));
+        var img = v[0], fet = v[1];
+        if (img === 'carga')      { fin('adentro'); return; }
+        if (fet === 'resuelve')   { fin('afuera');  return; }
+        // Nada volvió y algo se colgó hasta el TIMEOUT. Dentro de un iframe eso no
+        // puede ser el cartel de permiso esperando respuesta —ahí el navegador ni
+        // puede preguntar y deniega en el acto—, así que es la red que no contesta:
+        // típicamente la VPN recién desconectada, con el equipo todavía apuntando al
+        // DNS interno. Importa distinguirlo porque la navegación se va a colgar por lo
+        // mismo, y dejar pasar el click solo consigue una pestaña en blanco eterna.
+        // En primer nivel NO se concluye esto: ahí un cuelgue sí puede ser el cartel.
+        if (!CARTEL_POSIBLE && (img === 'timeout' || fet === 'timeout')) { fin('sin-red'); return; }
+        fin('no-se');
       });
     });
   }
@@ -480,9 +493,9 @@
     // Único caso que frena el click: confirmación positiva de estar afuera. Ante
     // cualquier otra cosa —veredicto no concluyente, o sonda todavía sin
     // terminar— no se toca nada y el <a> navega solo.
-    if (veredicto && veredicto.valor === 'afuera') {
+    if (veredicto && (veredicto.valor === 'afuera' || veredicto.valor === 'sin-red')) {
       e.preventDefault();
-      console.log('[smd-doc] afuera: freno el click, no abro pestaña.');
+      console.log('[smd-doc] ' + veredicto.valor + ': freno el click, no abro pestaña.');
       abrirAviso();
       return;
     }
