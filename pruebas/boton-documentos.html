@@ -112,6 +112,37 @@
   El contexto se detecta con window.top ilegible.
 
   ============================================================================
+  UN AVISO MÁS GRANDE QUE EL RECUADRO
+  ============================================================================
+  El aviso se dibuja dentro del iframe, así que no puede ser más grande que el
+  recuadro del embed. No hay ajuste de CSS ni de JS que lo cambie. Si se quiere un
+  aviso a pantalla completa hay dos caminos, los dos del lado de Wix:
+
+  1. AVISO_URL — lo más simple. Se completa con la dirección de una página que
+     explique que el recurso es interno, y el acceso lleva ahí a quien viene de
+     internet. No requiere programar nada.
+
+  2. Un lightbox de Wix — se ve mejor integrado, y necesita unas líneas de Velo:
+
+       import wixWindow from 'wix-window';
+       $w.onReady(function () {
+         $w('#html1').onMessage(function (evento) {
+           var d = evento.data || {};
+           if (d.smdDoc === 'hola')  { $w('#html1').postMessage({ smdDoc: 'hola-recibido' }); }
+           if (d.smdDoc === 'aviso') { wixWindow.openLightbox('AvisoRedInterna'); }
+         });
+       });
+
+     (cambiar #html1 por el id real del elemento y AvisoRedInterna por el del
+     lightbox). El snippet saluda al cargar; si le contestan, en vez de dibujar su
+     cartel manda el aviso y deja que lo muestre la página. Si nadie contesta,
+     muestra el suyo. O sea que agregar esto es opcional y sacarlo no rompe nada.
+
+     NO mover la sonda afuera junto con el aviso: la sonda tiene que seguir dentro
+     del iframe, porque ahí el navegador no puede pedir permiso de red local. En
+     primer nivel sí puede, y el cartel vuelve.
+
+  ============================================================================
   DÓNDE TOCAR QUÉ
   ============================================================================
   Etiqueta del botón ......... ETIQUETA, en AJUSTES
@@ -427,6 +458,32 @@
     });
   }
 
+  // ── ¿La página que nos aloja puede mostrar el aviso ella misma? ────────────
+  // Desde adentro de un iframe no se puede dibujar por fuera de él: el aviso no
+  // puede ser más grande que el recuadro. Lo único que se puede hacer es AVISARLE
+  // a la página para que muestre lo suyo — un lightbox de Wix, por ejemplo, que sí
+  // ocupa la pantalla entera.
+  //
+  // NO CONFUNDIR: lo que sale del iframe es un MENSAJE, no la sonda. La sonda
+  // sigue corriendo acá adentro, que es justamente lo que evita que aparezca el
+  // cartel de permiso de red local. Mover la sonda afuera lo haría volver.
+  //
+  // Se saluda al cargar y se espera acuse. Si nadie contesta —que es el caso si
+  // no hay código del lado de Wix— se muestra el aviso de adentro, sin demora ni
+  // parpadeo, porque para cuando el usuario clickea ya sabemos la respuesta.
+  var HAY_PAGINA = false;
+
+  window.addEventListener('message', function (e) {
+    if (e.data && e.data.smdDoc === 'hola-recibido') { HAY_PAGINA = true; }
+  });
+
+  function saludarALaPagina() {
+    // targetOrigin '*' porque desde un iframe de otro origen no se puede leer cuál
+    // es el padre. No se manda nada sensible: solo un saludo y, después, un aviso.
+    try { window.parent.postMessage({ smdDoc: 'hola' }, '*'); } catch (err) {}
+  }
+  if (window.parent !== window) { saludarALaPagina(); }
+
   // ── Abrir y cerrar el aviso ────────────────────────────────────────────────
   function abrirAviso() {
     overlay.classList.add('smd-open');
@@ -465,6 +522,11 @@
         return;
       }
       e.preventDefault();
+      if (HAY_PAGINA) {
+        try { window.parent.postMessage({ smdDoc: 'aviso', agente: 'documentos-institucionales' }, '*'); } catch (err) {}
+        console.log('[smd-doc] afuera: freno el click y le paso el aviso a la página.');
+        return;
+      }
       console.log('[smd-doc] afuera: freno el click, no abro pestaña.');
       abrirAviso();
       return;
