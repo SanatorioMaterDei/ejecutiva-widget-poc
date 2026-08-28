@@ -62,7 +62,8 @@
   <div class="caja">
     <h2>Tamaño del recuadro</h2>
     <div class="medidas" id="medidas">
-      <button type="button" data-w="230" data-h="84">230 × 84 <span style="font-weight:400">· la de Wix hoy</span></button>
+      <button type="button" data-w="153" data-h="169">153 × 169 <span style="font-weight:400">· la de Wix hoy</span></button>
+      <button type="button" data-w="230" data-h="84">230 × 84</button>
       <button type="button" data-w="300" data-h="120">300 × 120</button>
       <button type="button" data-w="200" data-h="250">200 × 250</button>
       <button type="button" data-w="420" data-h="400">420 × 400</button>
@@ -78,26 +79,41 @@
   <div class="escenario">
     <iframe id="marco" title="Acceso a Documentos Institucionales"
             sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
-            src="boton-documentos.html" width="230" height="84"></iframe>
+            src="boton-documentos.html" width="153" height="169"></iframe>
   </div>
 
   <div class="caja" style="margin-top:1.2rem">
     <h2>Qué tiene que pasar</h2>
     <table>
       <tr>
-        <td>Con VPN o en la red</td>
-        <td>Al hacer clic se abre una pestaña con el asistente. No aparece ningún cartel.</td>
+        <td>Con acceso a la red</td>
+        <td>Al hacer clic se abre una pestaña con el asistente y no aparece ningún cartel.
+            En la consola, <code>no-se</code> con un número chico — el navegador bloqueó la
+            sonda, que es la señal de que estás adentro. En Firefox y Safari da
+            <code>adentro</code>, porque ellos no aplican esa restricción.</td>
       </tr>
       <tr>
         <td>Desde internet</td>
-        <td>Al hacer clic <strong>no se abre ninguna pestaña</strong> y aparece el aviso sobre el
-            recuadro. Probalo en cada medida: el título y el botón “Entendido” tienen que verse
-            siempre, sin scrollear.</td>
+        <td>Al hacer clic <strong>no se abre ninguna pestaña</strong> y aparece el aviso sobre
+            el recuadro. Probalo en cada medida: el título y el botón “Entendido” tienen que
+            verse siempre, sin scrollear.</td>
       </tr>
       <tr>
-        <td>En la consola</td>
-        <td>Al cargar tiene que salir <code>[smd-doc] sonda: …</code> con el veredicto
-            (<code>adentro</code>, <code>afuera</code> o <code>no-se</code>) y los ms.</td>
+        <td>Si la red no contesta</td>
+        <td>Veredicto <code>sin-red</code> y también muestra el aviso. Es a propósito: si la
+            sonda se cuelga, la navegación se colgaría por lo mismo y solo conseguirías una
+            pestaña en blanco.</td>
+      </tr>
+      <tr>
+        <td>La línea de la consola</td>
+        <td>Sale al cargar y trae el detalle de cada señal, que es lo que hace falta para
+            diagnosticar:<br>
+            <code>img=carga</code> → se llegó al servidor interno.<br>
+            <code>img=falla fetch=resuelve</code> → contestó un servidor pero no entregó el
+            recurso: estás afuera.<br>
+            <code>img=falla fetch=rechaza</code> → el navegador ni mandó el pedido: estás
+            adentro.<br>
+            <code>timeout</code> en alguna → la red no contesta.</td>
       </tr>
       <tr>
         <td>Con el aviso abierto</td>
@@ -107,9 +123,14 @@
   </div>
 
   <div class="ojo">
-    <b>Para ver el aviso hay que estar fuera de la red.</b> Con la VPN conectada el veredicto va
-    a ser <code>no-se</code> o <code>adentro</code> y el acceso va a abrir el asistente, que es
-    lo correcto. Desconectá la VPN, recargá la página y probá de nuevo para ver el otro camino.
+    <b>Para ver el aviso hay que estar sin acceso a la red interna.</b> Con acceso, el veredicto
+    va a ser <code>no-se</code> o <code>adentro</code> y el acceso va a abrir el asistente, que
+    es lo correcto. Para ver el otro camino hay que salir de esa red y recargar.
+    <br><br>
+    Si dudás de en qué situación estás, abrí
+    <code>apps.sanatoriomaterdei.com.ar/portal_ia/whoami</code>: si devuelve una IP tenés
+    acceso, y si devuelve 403 no. El botón tiene que coincidir con eso; si no coincide, ahí sí
+    hay algo para revisar.
   </div>
 </main>
 
@@ -134,7 +155,7 @@
     document.getElementById('borde').addEventListener('change', function () {
       marco.classList.toggle('con-borde', this.checked);
     });
-    poner(230, 84, botones[0]);
+    poner(153, 169, botones[0]);
   })();
 </script>
 </body>
