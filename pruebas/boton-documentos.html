@@ -408,13 +408,23 @@
     });
   }
 
-  // 'adentro' | 'afuera' | 'no-se'
+  // 'adentro' | 'afuera' | 'no-se', con el detalle de cada señal. El detalle se
+  // imprime en consola a propósito: cuando alguien reporta un comportamiento raro,
+  // saber cuál de las dos señales dio qué ahorra media hora de deducción.
   function sondear() {
     var t0 = Date.now();
     return new Promise(function (resolve) {
-      var listo = false;
-      function fin(v) { if (!listo) { listo = true; resolve({ veredicto:v, ms:Date.now()-t0 }); } }
+      var listo = false, det = {};
+      function fin(v) {
+        if (!listo) {
+          listo = true;
+          resolve({ veredicto:v, ms:Date.now()-t0,
+                    detalle:'img=' + (det.img || '?') + ' fetch=' + (det.fetch || '?') });
+        }
+      }
       var recurso = tengoElRecurso(), llego = llegoAUnServidor();
+      recurso.then(function (ok) { det.img   = ok ? 'carga' : 'falla'; });
+      llego.then(function (ok)   { det.fetch = ok ? 'resuelve' : 'rechaza'; });
       // Si la imagen carga ya está todo dicho y no se espera al fetch: con el
       // cartel de permiso en pantalla el pedido puede quedar colgado hasta el
       // TIMEOUT, y no tiene sentido demorar una respuesta que ya es concluyente.
@@ -436,7 +446,7 @@
     sondear().then(function (r) {
       enCurso = false;
       veredicto = { valor: r.veredicto, hora: Date.now() };
-      console.log('[smd-doc] sonda:', r.veredicto, '(' + r.ms + ' ms)');
+      console.log('[smd-doc] sonda:', r.veredicto, '(' + r.ms + ' ms) ·', r.detalle);
     });
   }
 
