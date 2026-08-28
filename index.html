@@ -226,6 +226,38 @@
     @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 
     /* ── KPI grid ─────────────────────────────────────────── */
+    /* ── Acceso estilo Wix (de prueba) ──────────────────────────────────
+       Se borra junto con la sección del mismo nombre cuando cierre la evaluación. */
+    .smd-embed-demo {
+      display: flex; flex-wrap: wrap; gap: 24px; align-items: center;
+      padding: 20px 22px; margin-bottom: 24px;
+      background: var(--card, #fff); border: 1px solid var(--line, #e3e8ef);
+      border-radius: 12px;
+    }
+    .smd-embed-texto { flex: 1 1 320px; min-width: 0; }
+    .smd-embed-texto h3 {
+      margin: 0 0 6px; font-size: 1rem; font-weight: 700; color: var(--smd-azul);
+    }
+    .smd-embed-texto p {
+      margin: 0 0 8px; font-size: .89rem; line-height: 1.55;
+      color: var(--muted, #5C5C5C); max-width: 62ch;
+    }
+    .smd-embed-texto p:last-child { margin-bottom: 0; }
+    .smd-embed-nota { font-size: .82rem !important; opacity: .85; }
+    .smd-embed-texto code {
+      font-family: ui-monospace, monospace; font-size: .85em;
+      background: rgba(0,40,86,.06); padding: .1em .35em; border-radius: 3px;
+    }
+    .smd-embed-caja {
+      flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 14px; border-radius: 10px; background: var(--smd-azul-suave);
+    }
+    .smd-embed-caja iframe { border: 0; display: block; background: transparent; }
+    .smd-embed-medida {
+      font-family: ui-monospace, monospace; font-size: .68rem; letter-spacing: .06em;
+      color: var(--smd-azul); opacity: .75;
+    }
+
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -645,6 +677,36 @@
               <span class="smd-agente-btn-texto">FarmacIA Interna</span>
             </a>
           </div>
+        </div>
+      </div>
+
+      <!-- ══ Acceso estilo Wix, para probar el snippet en una página real ══
+           El snippet de boton-documentos-institucionales corre acá dentro de un
+           iframe con sandbox, que le da ORIGEN OPACO. Eso reproduce el contexto
+           del embed de Wix: window.top queda ilegible, el snippet detecta que no
+           puede pedir permiso de red local y sondea al cargar, igual que en
+           produccion. Un iframe del mismo origen NO sirve: ahi window.top es
+           legible y tomaria el otro camino.
+           Es de PRUEBA. Se borra junto con pruebas/ cuando cierre la evaluación. -->
+      <div class="smd-embed-demo">
+        <div class="smd-embed-texto">
+          <h3>Acceso de Wix, en contexto</h3>
+          <p>
+            Este es el snippet que se pega en la intranet, corriendo como corre allá.
+            A diferencia de los botones de arriba, su aviso se dibuja <strong>dentro del
+            recuadro</strong>, porque en Wix no puede salirse de él.
+          </p>
+          <p class="smd-embed-nota">
+            Con VPN abre el asistente en una pestaña nueva. Desde internet no abre nada
+            y muestra el aviso acá al lado. Para probar las dos medidas y el detalle,
+            está el banco en <code>pruebas/probar-boton-documentos.html</code>.
+          </p>
+        </div>
+        <div class="smd-embed-caja">
+          <iframe title="Acceso a Documentos Institucionales"
+                  sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                  src="pruebas/boton-documentos.html" width="153" height="169"></iframe>
+          <span class="smd-embed-medida">153 × 169 · la medida de producción</span>
         </div>
       </div>
 
