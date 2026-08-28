@@ -437,10 +437,11 @@
         if (fet === 'resuelve')   { fin('afuera');  return; }
         // Nada volvió y algo se colgó hasta el TIMEOUT. Dentro de un iframe eso no
         // puede ser el cartel de permiso esperando respuesta —ahí el navegador ni
-        // puede preguntar y deniega en el acto—, así que es la red que no contesta:
-        // típicamente la VPN recién desconectada, con el equipo todavía apuntando al
-        // DNS interno. Importa distinguirlo porque la navegación se va a colgar por lo
-        // mismo, y dejar pasar el click solo consigue una pestaña en blanco eterna.
+        // puede preguntar y deniega en el acto—, así que es la red que no contesta.
+        // Se vio al cambiar de red: el equipo queda apuntando al DNS interno que ya no
+        // alcanza, y la resolución del nombre se cuelga. Importa distinguirlo de un
+        // rechazo rápido porque la navegación se va a colgar por lo mismo, y dejar
+        // pasar el click solo consigue una pestaña en blanco eterna.
         // En primer nivel NO se concluye esto: ahí un cuelgue sí puede ser el cartel.
         if (!CARTEL_POSIBLE && (img === 'timeout' || fet === 'timeout')) { fin('sin-red'); return; }
         fin('no-se');
