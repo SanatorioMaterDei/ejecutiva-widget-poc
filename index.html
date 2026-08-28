@@ -19,14 +19,7 @@
 
       /* Paleta institucional — "Colores permitidos - Web" */
       --smd-azul:       #002856;  /* P295C  */
-      --smd-azul-hover: #1A3E67;  /* tinte de P295C */
-      --smd-azul-claro: #92C0E9;  /* P283C  */
       --smd-azul-suave: #C2D5ED;  /* P2707C */
-      --smd-gris:       #5C5C5C;  /* escala de grises */
-      /* Rol del boton segun tema (solo colores de la paleta) */
-      --smd-btn-bg:       var(--smd-azul);
-      --smd-btn-bg-hover: var(--smd-azul-hover);
-      --smd-btn-fg:       #FFFFFF;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -36,15 +29,9 @@
         --text:    #D8E4F4;
         --text-2:  #7A94B8;
         --text-3:  #4A6080;
-        --smd-btn-bg:       var(--smd-azul-claro);
-        --smd-btn-bg-hover: var(--smd-azul-suave);
-        --smd-btn-fg:       var(--smd-azul);
       }
     }
     :root[data-theme="light"] {
-      --smd-btn-bg:       var(--smd-azul);
-      --smd-btn-bg-hover: var(--smd-azul-hover);
-      --smd-btn-fg:       #FFFFFF;
       --bg:      #EEF2F7;
       --surface: #FFFFFF;
       --border:  #D0D8E4;
@@ -53,9 +40,6 @@
       --text-3:  #8A9AB2;
     }
     :root[data-theme="dark"] {
-      --smd-btn-bg:       var(--smd-azul-claro);
-      --smd-btn-bg-hover: var(--smd-azul-suave);
-      --smd-btn-fg:       var(--smd-azul);
       --bg:      #080F1C;
       --surface: #0E1F3A;
       --border:  #1A3055;
@@ -479,96 +463,6 @@
       #chat-panel { width: calc(100vw - 16px); right: 8px; height: 520px; }
     }
 
-    /* ── Botones de agentes (Documentos, FarmacIA, FarmacIA Interna) ── */
-    /* Un solo estilo y un solo aviso compartido: cada botón declara su
-       destino y su sonda en data-*. Las versiones autocontenidas que se
-       pegan en Wix son los archivos sueltos (uno por agente); acá están
-       unificadas porque esta página es solo el host de prueba. */
-    .smd-agente-group {
-      display: flex;
-      align-items: center;
-      gap: .6rem;
-      flex-wrap: wrap;
-    }
-    .smd-agente-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: .55rem;
-      padding: .7rem 1.15rem;
-      background: var(--smd-btn-bg);
-      color: var(--smd-btn-fg);
-      border: none;
-      border-radius: 6px;
-      font-size: .84rem;
-      font-weight: 600;
-      letter-spacing: .01em;
-      text-decoration: none;
-      cursor: pointer;
-      transition: background .15s ease;
-    }
-    .smd-agente-btn svg { flex: none; }
-    .smd-agente-btn:hover { background: var(--smd-btn-bg-hover); }
-    .smd-agente-btn:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
-
-    #smd-aviso-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,40,86,.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 99999;   /* por encima de la burbuja (100) y del panel (99) */
-    }
-    #smd-aviso-overlay.smd-open { display: flex; }
-    #smd-aviso-modal {
-      background: #fff;
-      border-radius: 10px;
-      border-top: 6px solid var(--smd-azul);
-      padding: 32px 30px 28px;
-      max-width: 440px;
-      width: 100%;
-      box-shadow: 0 12px 40px rgba(0,40,86,.28);
-      text-align: center;
-    }
-    #smd-aviso-icono {
-      width: 56px; height: 56px;
-      margin: 0 auto 18px;
-      border-radius: 50%;
-      background: var(--smd-azul-suave);
-      color: var(--smd-azul);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #smd-aviso-modal h2 {
-      margin: 0 0 12px;
-      font-size: 18px;
-      line-height: 1.35;
-      font-weight: 700;
-      color: var(--smd-azul);
-    }
-    #smd-aviso-modal p {
-      margin: 0 0 24px;
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--smd-gris);
-    }
-    #smd-aviso-actions { display: flex; justify-content: center; }
-    #smd-aviso-close {
-      padding: 12px 32px;
-      border: none;
-      border-radius: 6px;
-      background: var(--smd-azul);
-      color: #fff;
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s ease;
-    }
-    #smd-aviso-close:hover { background: var(--smd-azul-hover); }
-    #smd-aviso-close:focus-visible { outline: 3px solid var(--smd-azul-claro); outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -640,68 +534,36 @@
             <span class="pulse"></span>
             Actualizado hace 4 min
           </div>
-          <div class="smd-agente-group">
-            <a class="smd-agente-btn" target="_blank" rel="noopener"
-               href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales"
-               data-sonda="https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png"
-               data-agente="Documentos Institucionales" data-log="smd-doc">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>
-              </svg>
-              <span class="smd-agente-btn-texto">Documentos Institucionales</span>
-            </a>
-
-            <a class="smd-agente-btn" target="_blank" rel="noopener"
-               href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/farmacia"
-               data-sonda="https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png"
-               data-agente="FarmacIA" data-log="smd-farm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M10.5 20.5 3.5 13.5a4.95 4.95 0 0 1 7-7l7 7a4.95 4.95 0 0 1-7 7Z"/>
-                <path d="m8.5 8.5 7 7"/>
-              </svg>
-              <span class="smd-agente-btn-texto">FarmacIA</span>
-            </a>
-
-            <a class="smd-agente-btn" target="_blank" rel="noopener"
-               href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/farmacia_interna"
-               data-sonda="https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png"
-               data-agente="FarmacIA Interna" data-log="smd-farmi">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-                <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
-              </svg>
-              <span class="smd-agente-btn-texto">FarmacIA Interna</span>
-            </a>
-          </div>
         </div>
       </div>
 
-      <!-- ══ Acceso estilo Wix, para probar el snippet en una página real ══
-           El snippet de boton-documentos-institucionales corre acá dentro de un
-           iframe con sandbox, que le da ORIGEN OPACO. Eso reproduce el contexto
-           del embed de Wix: window.top queda ilegible, el snippet detecta que no
-           puede pedir permiso de red local y sondea al cargar, igual que en
-           produccion. Un iframe del mismo origen NO sirve: ahi window.top es
-           legible y tomaria el otro camino.
-           Es de PRUEBA. Se borra junto con pruebas/ cuando cierre la evaluación. -->
+      <!-- ══ El acceso a Documentos Institucionales ══
+           Es EL boton, el mismo archivo que se entrega para pegar en Wix. Este POC
+           no tiene una implementacion propia: la tenia, con tres botones y un modal
+           a pantalla completa, y se elimino para no mantener dos versiones de la
+           misma logica.
+
+           Corre dentro de un iframe con sandbox, que le da ORIGEN OPACO. Eso
+           reproduce el contexto del embed de Wix: window.top queda ilegible, el
+           snippet detecta que no puede pedir permiso de red local y sondea al
+           cargar, igual que en produccion. Un iframe del mismo origen NO sirve:
+           ahi window.top es legible y el snippet toma el otro camino. -->
       <div class="smd-embed-demo">
         <div class="smd-embed-texto">
-          <h3>Acceso de Wix, en contexto</h3>
-          <p>
-            Este es el snippet que se pega en la intranet, corriendo como corre allá.
-            A diferencia de los botones de arriba, su aviso se dibuja <strong>dentro del
-            recuadro</strong>, porque en Wix no puede salirse de él.
-          </p>
-          <p class="smd-embed-nota">
-            Con VPN abre el asistente en una pestaña nueva. Desde internet no abre nada
-            y muestra el aviso acá al lado. Para probar las dos medidas y el detalle,
-            está el banco en <code>pruebas/probar-boton-documentos.html</code>.
-          </p>
-        </div>
+          <h3>Documentos Institucionales</h3>
+            <p>
+              Este es el acceso tal como se entrega para pegar en la intranet:
+              <strong>el mismo archivo</strong>, corriendo en el mismo contexto que allá.
+              Su aviso se dibuja dentro del recuadro porque en un embed no puede salirse
+              de él.
+            </p>
+            <p class="smd-embed-nota">
+              Con acceso a la red abre el asistente en una pestaña nueva. Sin acceso no abre
+              nada y muestra el aviso acá al lado. Para probarlo en distintas medidas y ver
+              el detalle de la sonda, está el banco en
+              <code>pruebas/probar-boton-documentos.html</code>.
+            </p>
+          </div>
         <div class="smd-embed-caja">
           <iframe title="Acceso a Documentos Institucionales"
                   sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
@@ -794,28 +656,6 @@
     </main>
   </div>
 
-  <!-- ── Aviso compartido: agente fuera de la red interna ── -->
-  <div id="smd-aviso-overlay" role="dialog" aria-modal="true" aria-labelledby="smd-aviso-title">
-    <div id="smd-aviso-modal">
-      <div id="smd-aviso-icono" aria-hidden="true">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="10" rx="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-      </div>
-      <h2 id="smd-aviso-title">Recurso exclusivo de la red del Sanatorio</h2>
-      <p>
-        El Asistente de <span id="smd-aviso-agente">Documentos Institucionales</span> solo está disponible desde la red
-        del Sanatorio, por wifi institucional o conectado por VPN. Volvé a intentarlo
-        desde una computadora del Sanatorio.
-      </p>
-      <div id="smd-aviso-actions">
-        <button id="smd-aviso-close" type="button">Entendido</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ── Floating bubble ── -->
   <button id="chat-bubble" aria-label="Abrir asistente de RRHH" aria-expanded="false" title="Asistente de RRHH">
     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -877,193 +717,6 @@
       if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
     });
 
-    // ── Botones de agentes ──
-    // Los agentes solo se sirven dentro de la red del Sanatorio. Desde internet el
-    // dominio resuelve a una IP pública y nginx contesta 403, así que el usuario de
-    // afuera va a chocar contra esa página haga lo que haga el botón: el sondeo existe
-    // para frenarlo antes y mostrarle el aviso en su lugar.
-    //
-    // LA SONDA NO CORRE EN EL CLICK. Antes sí, y como window.open exige activación por
-    // gesto había que pedir la pestaña ANTES de saber el veredicto; si daba negativo,
-    // esa pestaña se abría y se cerraba en la cara del usuario. Ahora el veredicto ya
-    // está tomado cuando llega el click, así que al de afuera no se le abre nada, y al
-    // de adentro lo lleva el <a> nativo con su target="_blank" y su rel="noopener".
-    // Eso saca del código window.open entero, y con él el bloqueador de popups, el
-    // w.opener = null y el fallback por window.top: un link común no necesita nada.
-    //
-    // CUÁNDO SE SONDEA DEPENDE DEL CONTEXTO, y la razón es una asimetría que conviene
-    // tener presente: el cartel de permiso de red local SOLO lo ve el usuario de
-    // adentro. Al de internet el destino le resuelve a una IP pública, Local Network
-    // Access ni interviene y su sonda vuelve en ~100 ms sin preguntar nada. O sea que
-    // el costo del cartel cae entero sobre quien no obtiene ningún beneficio de la
-    // detección. Por eso:
-    //
-    //   - En un iframe de otro origen (el embed de Wix, o sea PRODUCCIÓN) el permiso no
-    //     está delegado y el navegador ni puede preguntar: deniega solo en ~126 ms.
-    //     Ahí sondear al cargar sale gratis y el veredicto está listo siempre.
-    //   - En primer nivel (este POC, o un futuro con Velo) el navegador SÍ puede
-    //     preguntar. Sondear al cargar hace aparecer el cartel sin que el usuario haya
-    //     tocado nada — verificado en Opera con perfil limpio, aparece apenas entrás.
-    //     Ahí se espera a que muestre intención: apuntar, enfocar o empezar a tocar el
-    //     botón. Entre eso y el click hay cientos de ms, de sobra para una sonda de 35
-    //     a 160 ms, y si el cartel aparece queda atado a un elemento que el usuario
-    //     está señalando, que es mucho más explicable que uno que salta solo.
-    //
-    // Una sola sonda por URL alcanza para todos los botones que compartan data-sonda.
-    // El TIMEOUT ya no lo sufre nadie: la sonda corre en segundo plano y el click nunca
-    // la espera, así que un cartel sin contestar no traba a nadie.
-    // IIFE para no chocar con las const de arriba (iframe, close, loaded…).
-    (function () {
-      var TIMEOUT = 3000;
-      // Cuánto vale un veredicto antes de volver a preguntar. Cubre el caso de alguien
-      // que abre la página sin VPN, la conecta, y recién ahí clickea: sin esto le
-      // mostraríamos el aviso teniendo acceso. Se refresca al apuntar el botón, que da
-      // cientos de ms de ventaja sobre el click.
-      var FRESCURA_MS = 20000;
-
-      var overlay = document.getElementById('smd-aviso-overlay');
-      var cerrar  = document.getElementById('smd-aviso-close');
-      var nombre  = document.getElementById('smd-aviso-agente');
-      var ultimo  = null;   // botón que abrió el aviso, para devolverle el foco
-
-      // ── Cómo se decide si el usuario está afuera ────────────────────────────────
-      // El dominio tiene DNS partido: adentro resuelve a 10.1.1.15, una IP privada, y
-      // desde internet a una IP pública cuyo nginx contesta 403. De ahí salen tres
-      // situaciones, y una sola justifica el aviso. Medido en Chromium 148 sobre el
-      // origen real del embed de la intranet:
-      //
-      //   adentro, Chromium (Local Network Access bloquea)  img onerror | fetch RECHAZA  -> navegar
-      //   afuera (el borde público contesta 403)            img onerror | fetch RESUELVE -> AVISO
-      //   adentro, Firefox/Safari (no implementan LNA)      img ONLOAD  | fetch resuelve  -> navegar
-      //
-      // Ninguna señal sola alcanza: img.onerror aparece igual en los dos primeros casos
-      // —76 ms contra 69 ms, así que el tiempo tampoco los separa— y el fetch resuelve
-      // igual en los dos últimos. Juntas sí alcanzan, porque contestan preguntas
-      // distintas: la imagen dice "¿puedo obtener el recurso?" y el fetch dice "¿mi
-      // pedido llegó a algún servidor?". Haber llegado a un servidor y NO haber obtenido
-      // el recurso es la firma de estar afuera.
-      //
-      // NO volver a decidir esto por tiempo. Un 403 del borde público es MÁS rápido que
-      // un rechazo por política, porque es un viaje de ida y vuelta que se completa.
-
-      // ¿Puedo obtener el recurso? Solo onload cuenta como sí.
-      function tengoElRecurso(url) {
-        return new Promise(function (resolve) {
-          var img = new Image(), listo = false;
-          function fin(v) { if (!listo) { listo = true; resolve(v); } }
-          setTimeout(function () { img.src = ''; fin(false); }, TIMEOUT);
-          img.onload  = function () { fin(true); };
-          img.onerror = function () { fin(false); };
-          img.src = url + '?i=' + Date.now();
-        });
-      }
-
-      // ¿El pedido llegó a algún servidor? En modo no-cors la respuesta es opaca y no se
-      // puede leer el status, pero no hace falta: alcanza con que la promesa resuelva,
-      // porque eso ya prueba que el pedido salió y volvió. Si Local Network Access lo
-      // bloquea, el navegador ni lo manda y la promesa rechaza.
-      function llegoAUnServidor(url) {
-        return new Promise(function (resolve) {
-          var listo = false;
-          function fin(v) { if (!listo) { listo = true; resolve(v); } }
-          setTimeout(function () { fin(false); }, TIMEOUT);
-          try {
-            fetch(url + '?f=' + Date.now(), { mode: 'no-cors', cache: 'no-store' })
-              .then(function () { fin(true); }, function () { fin(false); });
-          } catch (err) { fin(false); }
-        });
-      }
-
-      // 'adentro' | 'afuera' | 'no-se'
-      function sondear(url) {
-        var t0 = Date.now();
-        return new Promise(function (resolve) {
-          var listo = false;
-          function fin(v) { if (!listo) { listo = true; resolve({ veredicto:v, ms:Date.now()-t0 }); } }
-          var recurso = tengoElRecurso(url), llego = llegoAUnServidor(url);
-          // Si la imagen carga ya está todo dicho y no se espera al fetch: con el cartel
-          // de permiso de red local en pantalla el pedido puede quedar colgado hasta el
-          // TIMEOUT, y no tiene sentido demorar por él una respuesta que ya es concluyente.
-          recurso.then(function (ok) { if (ok) { fin('adentro'); } });
-          Promise.all([recurso, llego]).then(function (v) {
-            fin(v[0] ? 'adentro' : (v[1] ? 'afuera' : 'no-se'));
-          });
-        });
-      }
-
-      // ¿Puede el navegador llegar a mostrar el cartel de permiso acá? Dentro de un
-      // iframe de otro origen no, porque el permiso no está delegado. window.top
-      // ilegible es la forma de saber que estamos en uno.
-      function elCartelEsPosible() {
-        if (window.top === window.self) { return true; }
-        try { void window.top.location.href; return true; }
-        catch (err) { return false; }
-      }
-      var CARTEL_POSIBLE = elCartelEsPosible();
-
-      // ── Caché de veredictos, por URL de sonda ──────────────────────────────────
-      var veredictos = {};   // url -> { valor:'adentro'|'afuera'|'no-se', hora:ms }
-      var enCurso    = {};   // url -> true mientras hay una sonda viva
-
-      function refrescar(url, log) {
-        if (enCurso[url]) { return; }
-        var previo = veredictos[url];
-        if (previo && (Date.now() - previo.hora) < FRESCURA_MS) { return; }
-        enCurso[url] = true;
-        sondear(url).then(function (r) {
-          enCurso[url] = false;
-          veredictos[url] = { valor: r.veredicto, hora: Date.now() };
-          console.log('[' + log + '] sonda:', r.veredicto, '(' + r.ms + ' ms)');
-        });
-      }
-
-      function abrirAviso(boton) {
-        ultimo = boton;
-        nombre.textContent = boton.getAttribute('data-agente');
-        overlay.classList.add('smd-open');
-        cerrar.focus();
-      }
-      function cerrarAviso() {
-        overlay.classList.remove('smd-open');
-        if (ultimo) { ultimo.focus(); }
-      }
-
-      Array.prototype.forEach.call(document.querySelectorAll('.smd-agente-btn'), function (boton) {
-        var sonda = boton.getAttribute('data-sonda');
-        var log   = boton.getAttribute('data-log');
-
-        // Donde el cartel no puede aparecer, se sondea ya. Donde sí puede, se espera a
-        // que el usuario muestre intención. Las cuatro señales cubren mouse, teclado y
-        // touch; refrescar() se encarga de no repetir el pedido.
-        if (!CARTEL_POSIBLE) { refrescar(sonda, log); }
-        var INTENCION = ['pointerenter', 'pointerdown', 'focus', 'touchstart'];
-        for (var i = 0; i < INTENCION.length; i++) {
-          boton.addEventListener(INTENCION[i], function () { refrescar(sonda, log); });
-        }
-
-        boton.addEventListener('click', function (e) {
-          var v = veredictos[sonda];
-          // Único caso que frena el click: confirmación positiva de estar afuera. Ante
-          // cualquier otra cosa —veredicto no concluyente, o sonda todavía sin
-          // terminar— no se toca nada y el <a> navega solo. El de adentro nunca sale
-          // perjudicado; el de afuera que clickee en los primeros milisegundos cae en
-          // el 403, igual que antes de todo esto.
-          if (v && v.valor === 'afuera') {
-            e.preventDefault();
-            console.log('[' + log + '] afuera: freno el click, no abro pestaña.');
-            abrirAviso(boton);
-            return;
-          }
-          if (!v) { console.log('[' + log + '] sonda sin terminar: dejo pasar el click.'); }
-        });
-      });
-
-      cerrar.addEventListener('click', cerrarAviso);
-      overlay.addEventListener('click', function (e) { if (e.target === overlay) cerrarAviso(); });
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && overlay.classList.contains('smd-open')) cerrarAviso();
-      });
-    })();
   </script>
 </body>
 </html>
