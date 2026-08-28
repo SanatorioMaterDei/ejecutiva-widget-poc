@@ -12,17 +12,17 @@
   recurso es interno.
 
   ============================================================================
-  PARA QUIEN LO INSTALA EN WIX — SOLO HAY QUE TOCAR ESTAS 3 COSAS
+  PARA QUIEN LO INSTALA EN WIX — NO HAY QUE CONFIGURAR NADA
   ============================================================================
-  Están todas juntas en el bloque "AJUSTES" del <script>, abajo de todo.
+  El snippet viene listo: se pega y funciona. No necesita ninguna configuración
+  del lado de Wix, ni código, ni páginas, ni ajustes del sitio.
 
-  1. ICONO   — la URL de la imagen del icono. Si se deja vacío, se dibuja un
-               botón de texto con los colores institucionales, que sirve igual.
-  2. ETIQUETA— el texto del botón y el alt de la imagen. Ya viene puesto.
-  3. AVISO_URL — opcional. Si más adelante existe una página institucional que
-               diga "este recurso es solo de la red interna", poner acá su URL:
-               el botón lleva ahí al usuario de internet en vez de mostrarle el
-               cartelito chico. Vacío = cartelito dentro del mismo recuadro.
+  Los dos únicos valores que alguien podría querer cambiar están juntos en el
+  bloque "AJUSTES" del <script>, abajo de todo:
+
+  1. ICONO   — la imagen del icono, hoy embebida en el propio archivo. Si se
+               deja vacía, se dibuja un botón de texto institucional.
+  2. ETIQUETA— el nombre accesible del acceso. Ya viene puesto.
 
   CÓMO SE INSTALA
   1. Editor de Wix -> Agregar (+) -> Incrustar código -> HTML incrustado.
@@ -121,13 +121,15 @@
   página, sin regresión en el camino del usuario interno— y se descartó igual, a
   pedido: se prefiere el mensaje corto dentro del recuadro.
 
-  No reintroducirlo sin que lo pidan. Si alguna vez se pide un aviso más grande,
-  la opción barata es AVISO_URL, que ya está implementada y no necesita código del
-  lado de Wix.
+  También existió un AVISO_URL, que llevaba al usuario de internet a una página
+  institucional en vez de mostrarle el cartel. Se quitó por la misma razón: no se
+  va a hacer ninguna configuración del lado de Wix, así que el snippet no debe
+  depender de que exista una página, ni ofrecer un ajuste que nadie va a completar.
 
-  Y si se retomara el camino del lightbox: lo que sale del iframe tiene que ser
-  solo el MENSAJE. La sonda se queda adentro, porque ahí el navegador no puede
-  pedir permiso de red local; en primer nivel sí puede y el cartel vuelve.
+  No reintroducir ninguna de las dos sin que las pidan. Y si algún día se retomara
+  el camino del lightbox: lo que sale del iframe tiene que ser solo el MENSAJE. La
+  sonda se queda adentro, porque ahí el navegador no puede pedir permiso de red
+  local; en primer nivel sí puede y el cartel vuelve.
 
   ============================================================================
   DÓNDE TOCAR QUÉ
@@ -135,9 +137,8 @@
   Etiqueta del botón ......... ETIQUETA, en AJUSTES
   Icono ...................... ICONO, en AJUSTES
   Texto del aviso ............ bloque #smd-doc-modal, en el HTML
-  Página de aviso ............ AVISO_URL, en AJUSTES
   Colores .................... variables --smd-* de #smd-doc-root
-  URL del agente ............. AGENTE, en AJUSTES, Y el href del <a> (las dos)
+  URL del agente ............. el href del <a id="smd-doc-btn">, único lugar
 -->
 
 <div id="smd-doc-root">
@@ -271,8 +272,9 @@
     }
   </style>
 
-  <!-- El href real es el camino sin JS: si el script no corriera, el link
-       igual funciona. Tiene que coincidir con AGENTE. -->
+  <!-- Acá vive el destino, y en un solo lugar. El JS no lo toca: solo decide si
+       deja pasar el click o lo frena. Si el script no corriera, el link funciona
+       igual. -->
   <a id="smd-doc-btn"
      href="https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales"
      target="_blank" rel="noopener">
@@ -339,13 +341,6 @@
   // de la imagen. Con icono no se dibuja como texto, porque la imagen ya trae el
   // nombre adentro y repetirlo sería redundante.
   var ETIQUETA  = 'Qualy, el asistente de Documentos Institucionales';
-  // Opcional: página institucional que explique que el recurso es interno.
-  // Si se completa, al usuario de internet se lo lleva ahí en vez de mostrarle
-  // el cartelito de este mismo recuadro.
-  var AVISO_URL = '';
-
-  // A dónde lleva el botón. Si cambia, cambiar también el href del <a> de arriba.
-  var AGENTE = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/embed/documentos-institucionales';
   // Recurso que el portal sirve solo a la red interna. NO usar favicon.png:
   // está expuesto a internet y daría "disponible" siempre.
   var SONDA   = 'https://apps.sanatoriomaterdei.com.ar/portal_ia/logo-materdei.png';
@@ -476,18 +471,11 @@
     // cualquier otra cosa —veredicto no concluyente, o sonda todavía sin
     // terminar— no se toca nada y el <a> navega solo.
     if (veredicto && veredicto.valor === 'afuera') {
-      if (AVISO_URL) {
-        // Hay página de aviso: se deja que el <a> navegue, pero hacia ella.
-        boton.setAttribute('href', AVISO_URL);
-        console.log('[smd-doc] afuera: llevo a la página de aviso.');
-        return;
-      }
       e.preventDefault();
       console.log('[smd-doc] afuera: freno el click, no abro pestaña.');
       abrirAviso();
       return;
     }
-    boton.setAttribute('href', AGENTE);
     if (!veredicto) { console.log('[smd-doc] sonda sin terminar: dejo pasar el click.'); }
   });
 })();
