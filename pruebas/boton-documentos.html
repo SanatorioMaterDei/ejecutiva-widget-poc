@@ -225,17 +225,30 @@
     #smd-doc-close:hover { background:var(--smd-azul-hover); }
     #smd-doc-close:focus-visible { outline:3px solid var(--smd-azul-claro); outline-offset:2px; }
 
-    /* Cuanto más bajo el recuadro, menos texto entra. Se va cediendo por orden
-       de importancia: primero el símbolo, después la frase de detalle, y en el
-       extremo queda el título con la acción — que es el mensaje irreducible. */
-    @media (max-height: 230px) { #smd-doc-simbolo { display:none; } }
-    @media (max-height: 260px) { #smd-doc-extra   { display:none; } }
-    @media (max-height: 150px) {
-      #smd-doc-base { display:none; }
-      #smd-doc-overlay { padding:3px; }
-      #smd-doc-modal { border-top-width:3px; border-radius:6px; padding:6px 8px; }
-      #smd-doc-modal h2 { font-size:11px; line-height:1.22; margin-bottom:5px; }
-      #smd-doc-texto { margin-bottom:5px; }
+    /* El mensaje existe en tres largos y se muestra el que entra, en vez de
+       recortar uno solo con scroll. Cuanto más bajo el recuadro, menos texto:
+       primero se va el símbolo, después la frase de detalle, después la versión
+       larga cede a la corta, y en el extremo queda el título con la acción, que
+       es el mensaje irreducible. */
+    #smd-doc-corto { display:none; }
+
+    @media (max-height: 380px) { #smd-doc-extra   { display:none; } }
+    @media (max-height: 300px) { #smd-doc-simbolo { display:none; } }
+    @media (max-height: 300px) {
+      #smd-doc-base  { display:none; }
+      #smd-doc-corto { display:block; }
+    }
+    @media (max-height: 210px) {
+      #smd-doc-overlay { padding:4px; }
+      #smd-doc-modal { border-top-width:3px; border-radius:6px; padding:8px 9px; }
+      #smd-doc-modal h2 { font-size:12px; line-height:1.2; margin-bottom:5px; }
+      #smd-doc-modal p { font-size:11px; line-height:1.32; }
+      #smd-doc-texto { margin-bottom:7px; }
+      #smd-doc-close { padding:5px 16px; font-size:11.5px; }
+    }
+    @media (max-height: 140px) {
+      #smd-doc-corto { display:none; }
+      #smd-doc-modal h2 { font-size:11px; }
       #smd-doc-close { padding:4px 14px; font-size:11px; }
     }
   </style>
@@ -268,6 +281,9 @@
       </div>
       <div id="smd-doc-texto">
         <h2 id="smd-doc-title">Recurso exclusivo de la red del Sanatorio</h2>
+        <p id="smd-doc-corto">
+          Entr&aacute; desde la red del Sanatorio o por VPN.
+        </p>
         <p id="smd-doc-base">
           Qualy, el asistente de Documentos Institucionales, solo est&aacute; disponible
           desde la red del Sanatorio, por wifi institucional o conectado por VPN.
